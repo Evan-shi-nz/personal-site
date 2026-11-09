@@ -3,7 +3,7 @@
 
 export const site = {
   // TODO: your domain, e.g. https://yourname.com (used for SEO, sitemap and RSS)
-  url: "https://example.com",
+  url: "https://personal-site.ssgooglx.workers.dev",
   // TODO: your name as you want employers to see it
   name: "Your Name",
   // One line under your name on the home page
