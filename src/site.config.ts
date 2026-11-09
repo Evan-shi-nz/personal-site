@@ -3,7 +3,7 @@
 
 export const site = {
   // TODO: your domain, e.g. https://yourname.com (used for SEO, sitemap and RSS)
-  url: "https://personal-site.ssgooglx.workers.dev",
+  url: "https://personal-site.ssgooglx.workers.dev", // TODO: replace with your own domain later
   // TODO: your name as you want employers to see it
   name: "Your Name",
   // One line under your name on the home page
@@ -12,7 +12,9 @@ export const site = {
   description:
     "Personal site of an indie maker moving from China to New Zealand: IELTS progress, building online products, verified revenue and resume.",
   locale: "en_NZ",
-  avatar: "/images/avatar.png",
+  avatar: "/images/avatar.webp",
+  // Square image for link previews on X, LinkedIn, etc.
+  ogImage: "/images/avatar-og.jpg",
   links: {
     // TODO: fill in or set to "" to hide
     x: "", // TODO: e.g. "https://x.com/yourhandle"

@@ -15,7 +15,7 @@ const fullTitle = title ? `${title} | ${site.name}` : `${site.name}: ${site.tagl
 // Clean URL without ".html" or "/index", matching the sitemap and how Cloudflare Pages serves pages.
 const cleanPath = Astro.url.pathname.replace(/\.html$/, "").replace(/\/index$/, "").replace(/\/$/, "");
 const canonical = new URL(cleanPath || "/", Astro.site);
-const image = new URL(site.avatar, Astro.site);
+const image = new URL(site.ogImage, Astro.site);
 const path = cleanPath;
 const nav = [
   ["/blog", "Blog"],

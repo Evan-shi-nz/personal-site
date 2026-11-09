@@ -37,7 +37,8 @@ personal-site/
 │   ├── api/revenue.js          ← /api/revenue 的实现
 │   └── _lib/revenue.mjs        ← 收入计算（与验证工具完全相同）
 ├── public/
-│   ├── images/avatar.png       ← 头像（512×512）
+│   ├── images/avatar.webp      ← 页面头像（192×192，约 4 KB）
+│   ├── images/avatar-og.jpg    ← 分享卡片图（512×512）
 │   ├── images/avatar-64.png    ← 浏览器标签图标
 │   └── admin/                  ← 网页写作后台
 ├── scripts/                    ← X 同步、X 存档导入
@@ -107,7 +108,7 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
    | 预览命令 | 保持默认 |
 
 3. 点 **部署**，等 1–2 分钟。成功后会得到一个 `personal-site.<你的子域>.workers.dev` 地址。
-4. 绑定域名：进入这个 Worker → **设置（Settings）→ 域和路由（Domains & Routes）→ 添加 → 自定义域（Custom domain）**，填 `personal-site.ssgooglx.workers.dev`。域名在同一个 Cloudflare 账号里时，DNS 记录和 HTTPS 证书会自动创建。
+4. 绑定域名：进入这个 Worker → **设置（Settings）→ 域和路由（Domains & Routes）→ 添加 → 自定义域（Custom domain）**，填你的域名（例如 `www.yourname.com`）。域名在同一个 Cloudflare 账号里时，DNS 记录和 HTTPS 证书会自动创建。然后把 `src/site.config.ts` 的 `url` 和 `public/robots.txt` 里的地址改成这个域名。
 5. 添加 Stripe Key：Worker → **设置 → 变量和机密（Variables and Secrets）→ 添加**：
 
    | 类型 | 名称 | 值 |
