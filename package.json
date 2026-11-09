@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "wrangler pages dev dist",
+    "preview": "wrangler dev",
     "sync:x": "node scripts/sync-x.mjs",
     "import:x-archive": "node scripts/import-x-archive.mjs"
   },

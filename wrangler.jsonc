@@ -1,0 +1,20 @@
+// Cloudflare Workers config: static site from ./dist plus the /api/revenue endpoint.
+// Deployed by Cloudflare Workers Builds on every push (build: `npm run build`, deploy: `npx wrangler deploy`).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personal-site",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // /blog serves blog.html; unknown paths get dist/404.html with status 404
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Only API requests run the Worker; everything else is served straight from the static files
+    "run_worker_first": ["/api/*"]
+  },
+  // Keep variables set in the dashboard (PUBLIC_STRIPE_VERIFY_KEY) across deploys
+  "keep_vars": true,
+  "observability": { "enabled": true }
+}

@@ -2,7 +2,7 @@
 
 My personal website: blog, short notes synced from X, resume, and publicly verifiable revenue.
 
-- **Static site** built with [Astro](https://astro.build), hosted on **Cloudflare Pages**. No server of my own.
+- **Static site** built with [Astro](https://astro.build), hosted on **Cloudflare Workers** (static assets plus one small API route). No server of my own.
 - **Revenue is verifiable.** `/revenue` publishes a Stripe key that can only read my balance. Anyone can check the numbers with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code as this site.
 - **Editable in the browser** at `/admin` ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)). Every save is a Git commit.
 
@@ -31,8 +31,10 @@ personal-site/
 │   ├── content/notes/*.md      ← 短动态（手写或从 X 同步）
 │   ├── pages/                  ← 各页面模板
 │   └── styles/global.css       ← 样式
+├── wrangler.jsonc              ← Cloudflare Workers 配置
+├── worker/index.js             ← Worker 入口：只处理 /api/*，其余是静态文件
 ├── functions/
-│   ├── api/revenue.js          ← Cloudflare 函数：/api/revenue
+│   ├── api/revenue.js          ← /api/revenue 的实现
 │   └── _lib/revenue.mjs        ← 收入计算（与验证工具完全相同）
 ├── public/
 │   ├── images/avatar.png       ← 头像（512×512）
@@ -90,28 +92,31 @@ personal-site/
 >
 > ⚠️ 以前公开过的旧 Key（能读取 charges 的那个）请在 Stripe 后台删除。
 
-### 第 3 步：部署到 Cloudflare Pages
+### 第 3 步：部署到 Cloudflare（Workers）
 
-1. Cloudflare 后台 → **Workers & Pages → Create → Pages → Connect to Git**，授权 GitHub，选择 `personal-site` 仓库。
-2. 构建设置：
+Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 `wrangler.jsonc`，直接用就行。
+
+1. Cloudflare 控制台 → **Workers & Pages** → **创建应用程序** → **导入存储库**（Import a repository），授权 GitHub，选择 `Evan-shi-nz/personal-site`。
+2. 在"创建和部署"页面填写：
 
    | 项目 | 值 |
    |---|---|
-   | Framework preset | Astro |
-   | Build command | `npm run build` |
-   | Build output directory | `dist` |
+   | 项目名称 | `personal-site`（必须和 `wrangler.jsonc` 里的 `name` 一致） |
+   | 构建命令 | `npm run build` |
+   | 部署命令 | `npx wrangler deploy` |
+   | 预览命令 | 保持默认 |
 
-3. **Environment variables** 添加（Production 和 Preview 都要加）：
+3. 点 **部署**，等 1–2 分钟。成功后会得到一个 `personal-site.<你的子域>.workers.dev` 地址。
+4. 绑定域名：进入这个 Worker → **设置（Settings）→ 域和路由（Domains & Routes）→ 添加 → 自定义域（Custom domain）**，填 `personal-site.ssgooglx.workers.dev`。域名在同一个 Cloudflare 账号里时，DNS 记录和 HTTPS 证书会自动创建。
+5. 添加 Stripe Key：Worker → **设置 → 变量和机密（Variables and Secrets）→ 添加**：
 
-   | 名称 | 值 |
-   |---|---|
-   | `PUBLIC_STRIPE_VERIFY_KEY` | `rk_live_...`（第 2 步的 Key） |
-   | `NODE_VERSION` | `22` |
+   | 类型 | 名称 | 值 |
+   |---|---|---|
+   | 文本（Text） | `PUBLIC_STRIPE_VERIFY_KEY` | `rk_live_...`（第 2 步的 Key） |
 
-4. 点 **Save and Deploy**。`functions/` 目录会被自动识别为接口，不需要额外配置。
-5. 部署成功后，在 **Custom domains** 绑定你的域名，然后回到第 1 步把 `site.config.ts` 的 `url` 改成这个域名。
+   保存后立即生效，不需要重新构建。`wrangler.jsonc` 里设置了 `keep_vars: true`，以后自动部署不会把它清掉。
 
-之后每次推送到 `main` 分支，Cloudflare 都会自动重新部署。
+之后每次推送到 `main` 分支，Cloudflare 都会自动重新构建和部署。
 
 ### 第 4 步：开启网页写作后台
 
@@ -178,18 +183,18 @@ npm run dev
 
 打开 http://localhost:4321 。修改文件后页面会自动刷新。
 
-`npm run dev` 不运行 Cloudflare 函数，所以收入页会显示 "Couldn't load"，这是正常的。要在本地连同收入接口一起测试：
+`npm run dev` 不运行 Worker，所以收入页会显示 "Couldn't load"，这是正常的。要在本地模拟 Cloudflare 环境、连同收入接口一起测试：
 
 ```bash
 cp .dev.vars.example .dev.vars   # 然后在 .dev.vars 里填入 Key
 npm run build
-npm run preview
+npm run preview                  # http://localhost:8787
 ```
 
 ## 收入验证是怎么工作的
 
 ```
-访客浏览器 ──> /revenue 页面 ──> /api/revenue（Cloudflare 函数）──> Stripe API
+访客浏览器 ──> /revenue 页面 ──> /api/revenue（Cloudflare Worker）──> Stripe API
                                        │
                                        └─ 只返回汇总数字，缓存 6 小时
 
@@ -205,10 +210,10 @@ npm run preview
 ## 常见问题
 
 **收入页提示 "oldest transactions not included yet"**
-Cloudflare 免费版每次请求最多 50 个子请求，接口最多读 4,500 笔交易。超过后需要升级 Workers 付费版，或者把历史汇总存进 Cloudflare KV。
+Cloudflare Workers 免费版每次请求最多 50 个子请求，接口最多读 4,500 笔交易。超过后需要升级 Workers 付费版，或者把历史汇总存进 Cloudflare KV。
 
-**改了 `PUBLIC_STRIPE_VERIFY_KEY` 后页面没变**
-页面上显示的 Key 是构建时写入的。改完环境变量后，在 Cloudflare 里点 **Retry deployment**。
+**改了 `PUBLIC_STRIPE_VERIFY_KEY` 后数字没变**
+收入数据在 Cloudflare 边缘缓存 6 小时，等缓存过期即可。页面上显示的 Key 是实时从接口读取的，改完马上生效。
 
 **国内打不开网站**
 Cloudflare 在国内访问不稳定，但目标读者在海外，不影响。

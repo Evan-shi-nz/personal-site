@@ -2,9 +2,9 @@
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
-// Set in Cloudflare Pages → Settings → Variables (used at build time and by /api/revenue).
-const key = import.meta.env.PUBLIC_STRIPE_VERIFY_KEY ?? "";
-const command = `node verify.mjs ${key || "rk_live_..."} --compare ${new URL("/api/revenue", site.url).href}`;
+// The key itself comes from /api/revenue at runtime (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEY),
+// so changing it never needs a rebuild.
+const apiUrl = new URL("/api/revenue", site.url).href;
 ---
 <Base title="Revenue" description="My product revenue, read live from Stripe, with a public key anyone can use to verify it.">
   <h1>Revenue</h1>
@@ -23,14 +23,11 @@ const command = `node verify.mjs ${key || "rk_live_..."} --compare ${new URL("/a
     It can see my balance and the amount of each transaction. It cannot see customers, emails, products
     or anything else, and it cannot change anything.
   </p>
-  {key ? (
-    <div class="key-box">
-      <code id="key">{key}</code>
-      <button type="button" data-copy="key">Copy key</button>
-    </div>
-  ) : (
-    <p class="muted">The verification key has not been published yet.</p>
-  )}
+  <div class="key-box" id="key-box" hidden>
+    <code id="key"></code>
+    <button type="button" data-copy="key">Copy key</button>
+  </div>
+  <p class="muted" id="key-missing">The verification key has not been published yet.</p>
 
   <h3>Option 1: the open-source verifier</h3>
   <p>
@@ -40,11 +37,11 @@ const command = `node verify.mjs ${key || "rk_live_..."} --compare ${new URL("/a
   </p>
   <pre><code id="cmd">git clone {site.repos.verifier}
 cd stripe-revenue-verifier
-{command}</code></pre>
+node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre>
   <button type="button" data-copy="cmd">Copy commands</button>
 
   <h3>Option 2: ask Stripe directly</h3>
-  <pre><code>curl https://api.stripe.com/v1/balance -u {key || "rk_live_..."}:</code></pre>
+  <pre><code>curl https://api.stripe.com/v1/balance -u <span data-key>rk_live_...</span>:</code></pre>
 
   <h3>How the numbers are calculated</h3>
   <ul>
@@ -58,6 +55,7 @@ cd stripe-revenue-verifier
 <script>
   type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
   type Data = {
+    verifyKey?: string;
     generatedAt: string;
     complete: boolean;
     currencies: Record<string, { total: Bucket; months: Record<string, Bucket> }>;
@@ -72,11 +70,20 @@ cd stripe-revenue-verifier
     );
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
+  function showKey(key?: string) {
+    if (!key || !key.startsWith("rk_")) return;
+    document.getElementById("key")!.textContent = key;
+    document.getElementById("key-box")!.hidden = false;
+    document.getElementById("key-missing")!.hidden = true;
+    document.querySelectorAll("[data-key]").forEach((el) => (el.textContent = key));
+  }
+
   async function load() {
     const box = document.getElementById("revenue")!;
     try {
       const res = await fetch("/api/revenue");
       const data: Data = await res.json();
+      showKey(data.verifyKey);
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
 
       const currencies = Object.entries(data.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross);

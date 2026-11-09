@@ -22,10 +22,12 @@ export async function onRequestGet({ request, env, waitUntil }) {
   try {
     // Refuse to publish numbers if the key could read customer data.
     if (!(await isForbidden(key, "/charges"))) {
+      // Don't echo a key that can read customer data.
       return json({ error: "The configured key can read charges. Replace it with a Balance-only key." }, 500);
     }
     const { transactions, complete } = await fetchAllBalanceTransactions(key, { maxPages: MAX_PAGES });
     const body = {
+      verifyKey: key,
       generatedAt: new Date().toISOString(),
       complete,
       transactionCount: transactions.length,
@@ -35,7 +37,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
     waitUntil(cache.put(cacheKey, res.clone()));
     return res;
   } catch (err) {
-    return json({ error: String(err.message || err) }, 502);
+    return json({ verifyKey: key, error: String(err.message || err) }, 502);
   }
 }
 
