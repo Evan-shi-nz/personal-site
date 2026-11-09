@@ -2,7 +2,7 @@
 # Every save is a commit to GitHub; Cloudflare Pages rebuilds the site automatically.
 backend:
   name: github
-  repo: yourhandle/personal-site # TODO: your GitHub user/repo
+  repo: Evan-shi-nz/personal-site
   branch: main
 
 media_folder: public/images/uploads

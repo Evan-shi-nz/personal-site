@@ -5,9 +5,14 @@
   "email": "",
   "phone": "",
   "links": [
-    { "label": "Website", "url": "https://example.com" },
-    { "label": "GitHub", "url": "https://github.com/yourhandle" },
-    { "label": "LinkedIn", "url": "https://www.linkedin.com/in/yourhandle" }
+    {
+      "label": "Website",
+      "url": "https://example.com"
+    },
+    {
+      "label": "GitHub",
+      "url": "https://github.com/Evan-shi-nz"
+    }
   ],
   "summary": "TODO: Two or three sentences. What you build, how many years, the strongest proof (for example: built and run two paid web products on my own, with verified revenue).",
   "experience": [
@@ -36,15 +41,48 @@
     }
   ],
   "skills": [
-    { "group": "Languages", "items": ["TypeScript", "JavaScript", "TODO"] },
-    { "group": "Frameworks", "items": ["React", "Next.js", "Astro", "TODO"] },
-    { "group": "Infrastructure", "items": ["Cloudflare", "Stripe", "TODO"] }
+    {
+      "group": "Languages",
+      "items": [
+        "TypeScript",
+        "JavaScript",
+        "TODO"
+      ]
+    },
+    {
+      "group": "Frameworks",
+      "items": [
+        "React",
+        "Next.js",
+        "Astro",
+        "TODO"
+      ]
+    },
+    {
+      "group": "Infrastructure",
+      "items": [
+        "Cloudflare",
+        "Stripe",
+        "TODO"
+      ]
+    }
   ],
   "education": [
-    { "degree": "TODO: Bachelor of ...", "school": "TODO: University", "start": "TODO", "end": "TODO" }
+    {
+      "degree": "TODO: Bachelor of ...",
+      "school": "TODO: University",
+      "start": "TODO",
+      "end": "TODO"
+    }
   ],
   "languages": [
-    { "language": "Mandarin Chinese", "level": "Native" },
-    { "language": "English", "level": "Professional working proficiency (IELTS Academic in progress)" }
+    {
+      "language": "Mandarin Chinese",
+      "level": "Native"
+    },
+    {
+      "language": "English",
+      "level": "Professional working proficiency (IELTS Academic in progress)"
+    }
   ]
 }

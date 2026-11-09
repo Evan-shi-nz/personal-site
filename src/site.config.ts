@@ -15,15 +15,15 @@ export const site = {
   avatar: "/images/avatar.png",
   links: {
     // TODO: fill in or set to "" to hide
-    x: "https://x.com/yourhandle",
-    linkedin: "https://www.linkedin.com/in/yourhandle",
-    github: "https://github.com/yourhandle",
+    x: "", // TODO: e.g. "https://x.com/yourhandle"
+    linkedin: "", // TODO: e.g. "https://www.linkedin.com/in/yourhandle"
+    github: "https://github.com/Evan-shi-nz",
     email: "",
   },
   // Public GitHub repos people can inspect
   repos: {
-    site: "https://github.com/yourhandle/personal-site",
-    verifier: "https://github.com/yourhandle/stripe-revenue-verifier",
+    site: "https://github.com/Evan-shi-nz/personal-site",
+    verifier: "https://github.com/Evan-shi-nz/stripe-revenue-verifier",
   },
   // Shown on the home page; keep it short and current
   now: [

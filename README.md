@@ -1,106 +1,218 @@
 # personal-site
 
-个人网站：博客、短动态（同步自 X）、英文简历、可公开验证的 Stripe 收入。
+My personal website: blog, short notes synced from X, resume, and publicly verifiable revenue.
 
-- 纯静态站（Astro），部署在 **Cloudflare Pages**，不需要自己的服务器
-- 唯一的动态接口 `/api/revenue` 是 Cloudflare Pages Function（`functions/api/revenue.js`）
-- 写作后台在 `/admin`（Sveltia CMS），保存时直接提交到 GitHub，Cloudflare 自动重新构建
-- 收入计算代码与开源验证工具 [stripe-revenue-verifier](https://github.com/yourhandle/stripe-revenue-verifier) 完全相同
+- **Static site** built with [Astro](https://astro.build), hosted on **Cloudflare Pages**. No server of my own.
+- **Revenue is verifiable.** `/revenue` publishes a Stripe key that can only read my balance. Anyone can check the numbers with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code as this site.
+- **Editable in the browser** at `/admin` ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)). Every save is a Git commit.
 
-## 页面
+---
 
-| 网址 | 内容 | 数据在哪里改 |
-|---|---|---|
-| `/` | 头像、简介、Now、最新文章和动态 | `src/site.config.ts` |
-| `/blog/<英文短语>` | 文章，网址就是文件名，对 SEO 友好 | `src/content/blog/*.md` 或 `/admin` |
-| `/notes` | 短动态，可自动同步 X | `src/content/notes/*.md` 或 `/admin` |
-| `/resume` | 英文简历，可打印或另存为 PDF | `src/data/resume.json` 或 `/admin` |
-| `/revenue` | 收入汇总 + 公开验证 Key + 验证命令 | Cloudflare 环境变量 |
-| `/rss.xml`、`/sitemap-index.xml` | 自动生成 | |
+# 中文说明（给自己看的部署与维护手册）
 
-## 第一次上线
+## 目录
 
-### 1. 改成你自己的信息
+1. [项目结构](#项目结构)
+2. [第一次上线（按顺序做一遍）](#第一次上线按顺序做一遍)
+3. [日常写作](#日常写作)
+4. [X（推特）同步](#x推特同步)
+5. [本地开发与预览](#本地开发与预览)
+6. [收入验证是怎么工作的](#收入验证是怎么工作的)
+7. [常见问题](#常见问题)
 
-全局搜索 `TODO`、`yourhandle`、`example.com` 并替换，主要在这几个文件：
+## 项目结构
 
-- `src/site.config.ts`：名字、域名、社交链接、Now
-- `src/data/resume.json`：简历
-- `public/admin/config.yml`：GitHub 仓库名
-- `public/robots.txt`：域名
-- `src/content/blog/why-i-am-moving-to-new-zealand.md`：示例文章，用自己的话重写
-
-头像在 `public/images/avatar.png`（512×512）和 `avatar-64.png`（网站图标）。
-
-### 2. 推到 GitHub（公开仓库）
-
-```bash
-git remote add origin https://github.com/<你的用户名>/personal-site.git
-git push -u origin main
+```
+personal-site/
+├── src/
+│   ├── site.config.ts          ← 名字、域名、社交链接、首页 "Now"（最常改）
+│   ├── data/resume.json        ← 简历内容
+│   ├── content/blog/*.md       ← 博客文章，文件名 = 网址
+│   ├── content/notes/*.md      ← 短动态（手写或从 X 同步）
+│   ├── pages/                  ← 各页面模板
+│   └── styles/global.css       ← 样式
+├── functions/
+│   ├── api/revenue.js          ← Cloudflare 函数：/api/revenue
+│   └── _lib/revenue.mjs        ← 收入计算（与验证工具完全相同）
+├── public/
+│   ├── images/avatar.png       ← 头像（512×512）
+│   ├── images/avatar-64.png    ← 浏览器标签图标
+│   └── admin/                  ← 网页写作后台
+├── scripts/                    ← X 同步、X 存档导入
+└── .github/workflows/sync-x.yml ← 定时同步 X
 ```
 
-### 3. 创建只读 Stripe Key
+| 网址 | 内容 |
+|---|---|
+| `/` | 头像、简介、Now、最新文章和动态 |
+| `/blog`、`/blog/<文件名>` | 文章列表、文章页 |
+| `/notes` | 短动态 |
+| `/resume` | 英文简历，按钮可另存为 PDF |
+| `/revenue` | 收入汇总、公开验证 Key、验证命令 |
+| `/admin` | 写作后台（不会被搜索引擎收录） |
+| `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 
-Stripe 后台 → Developers → API keys → **Create restricted key**：
+## 第一次上线（按顺序做一遍）
 
-- **Balance → Read**，其它全部保持 **None**
-- 先用验证工具自查：`node verify.mjs rk_live_xxx`，第 1 步必须全部显示 `refused`
-- 再查一遍每笔交易的 `description` 里有没有客户姓名或邮箱：
+### 第 1 步：填写个人信息
 
-```bash
-curl "https://api.stripe.com/v1/balance_transactions?limit=20" -u rk_live_xxx:
+在仓库里全局搜索 `TODO` 和 `example.com`，逐个替换：
+
+| 文件 | 要改的内容 |
+|---|---|
+| `src/site.config.ts` | `url`（你的域名）、`name`、`tagline`、`links.x`、`links.linkedin`、`now` |
+| `src/data/resume.json` | 整份简历 |
+| `public/robots.txt` | 最后一行的域名 |
+| `src/content/blog/why-i-am-moving-to-new-zealand.md` | 示例文章，用自己的话重写或删除 |
+
+社交链接留空 `""` 就不会显示。
+
+### 第 2 步：创建只读的 Stripe Key
+
+1. 打开 Stripe 后台 → **Developers → API keys → Create restricted key**。
+2. 名字填 `public-revenue-verify`。
+3. 只把 **Balance** 设为 **Read**，其它全部保持 **None**。
+4. 用验证工具自查，第 1 步必须全部显示 `refused`：
+
+   ```bash
+   git clone https://github.com/Evan-shi-nz/stripe-revenue-verifier
+   cd stripe-revenue-verifier
+   node verify.mjs rk_live_你的Key
+   ```
+
+5. 看一眼别人用这个 Key 能看到什么，确认 `description` 里没有客户姓名或邮箱：
+
+   ```bash
+   curl "https://api.stripe.com/v1/balance_transactions?limit=20" -u rk_live_你的Key:
+   ```
+
+> ⚠️ **不要把 Key 写进代码或提交到 GitHub。** GitHub 会自动扫描 Stripe Key 并通知 Stripe，Key 可能被作废。Key 只放在 Cloudflare 的环境变量里（第 3 步）。
+>
+> ⚠️ 以前公开过的旧 Key（能读取 charges 的那个）请在 Stripe 后台删除。
+
+### 第 3 步：部署到 Cloudflare Pages
+
+1. Cloudflare 后台 → **Workers & Pages → Create → Pages → Connect to Git**，授权 GitHub，选择 `personal-site` 仓库。
+2. 构建设置：
+
+   | 项目 | 值 |
+   |---|---|
+   | Framework preset | Astro |
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+
+3. **Environment variables** 添加（Production 和 Preview 都要加）：
+
+   | 名称 | 值 |
+   |---|---|
+   | `PUBLIC_STRIPE_VERIFY_KEY` | `rk_live_...`（第 2 步的 Key） |
+   | `NODE_VERSION` | `22` |
+
+4. 点 **Save and Deploy**。`functions/` 目录会被自动识别为接口，不需要额外配置。
+5. 部署成功后，在 **Custom domains** 绑定你的域名，然后回到第 1 步把 `site.config.ts` 的 `url` 改成这个域名。
+
+之后每次推送到 `main` 分支，Cloudflare 都会自动重新部署。
+
+### 第 4 步：开启网页写作后台
+
+1. GitHub → Settings → Developer settings → **Fine-grained personal access tokens** → Generate new token。
+   - Repository access：只选 `personal-site`
+   - Permissions：**Contents → Read and write**
+2. 打开 `https://你的域名/admin` → **Sign in with Token**，粘贴 Token。
+
+Token 只保存在你自己的浏览器里，不会经过任何服务器。
+
+## 日常写作
+
+**在网页上写（推荐）**：打开 `/admin` → Blog posts → New。保存后大约 1 分钟网站更新。
+
+**在本地写**：在 `src/content/blog/` 新建文件，**文件名用英文短语加连字符**，它就是文章网址，对 SEO 很重要：
+
+```markdown
+---
+title: My IELTS Writing Task 2 plan
+description: 一句话摘要，会显示在 Google 搜索结果和社交卡片里
+date: 2026-11-20
+tags: [ielts]
+draft: false
+---
+
+正文……
 ```
 
-**不要把 Key 写进代码仓库**。GitHub 会扫描 Stripe Key 并通知 Stripe，Key 可能被自动作废。它只放在 Cloudflare 的环境变量里。
+`ielts-writing-task-2-plan.md` → `https://你的域名/blog/ielts-writing-task-2-plan`
 
-### 4. 部署到 Cloudflare Pages
-
-Cloudflare 后台 → Workers & Pages → Create → Pages → **Connect to Git**，选这个仓库：
-
-- Framework preset：**Astro**
-- Build command：`npm run build`
-- Build output directory：`dist`
-- 环境变量（Settings → Variables and Secrets，Production 和 Preview 都加）：
-  - `PUBLIC_STRIPE_VERIFY_KEY` = `rk_live_...`
-
-`functions/` 目录会被自动识别为 Pages Functions。之后绑定你的域名（Custom domains）。
-
-### 5. 打开写作后台
-
-访问 `https://你的域名/admin` → **Sign in with Token**。GitHub → Settings → Developer settings → Fine-grained personal access tokens，只给这个仓库开 **Contents: Read and write** 权限。Token 只存在你自己的浏览器里。
+`draft: true` 的文章不会发布。
 
 ## X（推特）同步
 
-两种方式，可以同时用：
+两种方式可以同时用。
 
-**A. 自动同步（需要 X API 付费额度）**：GitHub 仓库 → Settings → Secrets and variables → Actions
+**A. 自动同步（需要 X API 付费权限）**
 
-- Secret `X_BEARER_TOKEN`：X 开发者后台的 Bearer Token
-- Variable `X_USERNAME`：你的 X 用户名（不带 @）
+1. 在 [developer.x.com](https://developer.x.com) 获取 Bearer Token（读取帖子是付费功能，开启前请确认当前价格）。
+2. GitHub 仓库 → Settings → Secrets and variables → Actions：
+   - **Secrets** 添加 `X_BEARER_TOKEN`
+   - **Variables** 添加 `X_USERNAME`（你的 X 用户名，不带 @）
+3. 之后每 12 小时自动同步一次原创帖子（不包括回复和转帖）。也可以在 Actions 页面点 **Run workflow** 手动运行。
 
-`.github/workflows/sync-x.yml` 每 12 小时运行一次，只同步原创帖子（不包括回复和转帖），新动态提交后 Cloudflare 自动重新部署。也可以在 Actions 页面手动运行。读取帖子是 X API 的付费功能，开启前请在 developer.x.com 确认当前价格。
+没有设置这两项时，这个任务会自动跳过，不会报错。
 
-**B. 免费导入历史帖子**：X → 设置 → 你的账号 → 下载数据存档，解压后：
+**B. 免费导入历史帖子**
+
+X → 设置 → 你的账号 → **下载数据存档**，解压后运行：
 
 ```bash
-node scripts/import-x-archive.mjs path/to/data/tweets.js 你的用户名
+node scripts/import-x-archive.mjs 存档路径/data/tweets.js 你的X用户名
+git add src/content/notes && git commit -m "Import X archive" && git push
 ```
 
-## 本地开发
+## 本地开发与预览
+
+需要 Node.js 22 或更新版本。
 
 ```bash
 npm install
-npm run dev          # http://localhost:4321（/api/revenue 本地不可用）
+npm run dev
 ```
 
-要在本地连同收入接口一起测试：把 `.dev.vars.example` 复制为 `.dev.vars`，填入 Key，然后：
+打开 http://localhost:4321 。修改文件后页面会自动刷新。
+
+`npm run dev` 不运行 Cloudflare 函数，所以收入页会显示 "Couldn't load"，这是正常的。要在本地连同收入接口一起测试：
 
 ```bash
-npm run build && npm run preview
+cp .dev.vars.example .dev.vars   # 然后在 .dev.vars 里填入 Key
+npm run build
+npm run preview
 ```
 
-## 收入数字怎么算
+## 收入验证是怎么工作的
 
-见 `functions/_lib/revenue.mjs`。只汇总 Stripe `reporting_category` 为 charge / refund / dispute / fee 的交易，转账和提现不算收入。接口只返回汇总数字，不返回交易 ID、描述或任何客户信息；如果配置的 Key 能读取订单（charges），接口会拒绝工作。结果在 Cloudflare 边缘缓存 6 小时。
+```
+访客浏览器 ──> /revenue 页面 ──> /api/revenue（Cloudflare 函数）──> Stripe API
+                                       │
+                                       └─ 只返回汇总数字，缓存 6 小时
 
-Cloudflare 免费版每次请求最多 50 个子请求，接口最多读 45 页（4,500 笔交易）。超过时页面会提示"oldest transactions not included yet"，到时候可以升级到付费版，或者把历史汇总存进 Cloudflare KV。
+任何人 ──> stripe-revenue-verifier（同一份计算代码）──> Stripe API ──> 对比结果
+```
+
+- 只统计 Stripe `reporting_category` 为 `charge`、`refund`、`dispute`、`fee` 的交易。提现（payout）和转账不算收入。
+- **毛收入（gross）** = 所有成功付款；**净收入（net）** = 毛收入 − 退款 − 争议 − Stripe 手续费。
+- 接口不返回交易 ID、描述或任何客户信息。
+- 如果配置的 Key 能读取订单（charges），或者是 `sk_` 开头的 Secret Key，接口会直接拒绝工作，防止误用。
+- `functions/_lib/revenue.mjs` 必须和验证工具里的 `revenue.mjs` 保持一致。改动时两边一起改。
+
+## 常见问题
+
+**收入页提示 "oldest transactions not included yet"**
+Cloudflare 免费版每次请求最多 50 个子请求，接口最多读 4,500 笔交易。超过后需要升级 Workers 付费版，或者把历史汇总存进 Cloudflare KV。
+
+**改了 `PUBLIC_STRIPE_VERIFY_KEY` 后页面没变**
+页面上显示的 Key 是构建时写入的。改完环境变量后，在 Cloudflare 里点 **Retry deployment**。
+
+**国内打不开网站**
+Cloudflare 在国内访问不稳定，但目标读者在海外，不影响。
+
+## License
+
+Code: MIT. Content (posts, notes, resume, photos): © Evan-shi-nz, all rights reserved.
