@@ -1,0 +1,77 @@
+---
+import Base from "../layouts/Base.astro";
+import resume from "../data/resume.json";
+---
+<Base title="Resume" description={`${resume.name}: ${resume.headline}. ${resume.location}.`}>
+  <article class="resume">
+    <header class="resume-head">
+      <div>
+        <h1>{resume.name}</h1>
+        <p class="muted">{resume.headline} · {resume.location}</p>
+        <p class="small">
+          {[resume.email, resume.phone].filter(Boolean).join(" · ")}
+          {resume.links.map((l, i) => (
+            <>{(i > 0 || resume.email || resume.phone) && " · "}<a href={l.url}>{l.url.replace(/^https?:\/\/(www\.)?/, "")}</a></>
+          ))}
+        </p>
+      </div>
+      <button type="button" class="no-print" id="print">Save as PDF</button>
+    </header>
+
+    <p>{resume.summary}</p>
+
+    <h2>Experience</h2>
+    {resume.experience.map((job) => (
+      <section class="job">
+        <div class="job-head">
+          <h3>{job.role} · {job.company}</h3>
+          <span class="muted small">{job.start} – {job.end} · {job.location}</span>
+        </div>
+        <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>
+      </section>
+    ))}
+
+    <h2>Skills</h2>
+    <dl class="skills">
+      {resume.skills.map((s) => (<><dt>{s.group}</dt><dd>{s.items.join(", ")}</dd></>))}
+    </dl>
+
+    <h2>Education</h2>
+    {resume.education.map((e) => (
+      <div class="job-head">
+        <span><strong>{e.degree}</strong>, {e.school}</span>
+        <span class="muted small">{e.start} – {e.end}</span>
+      </div>
+    ))}
+
+    <h2>Languages</h2>
+    <ul>{resume.languages.map((l) => <li>{l.language}: {l.level}</li>)}</ul>
+  </article>
+</Base>
+
+<script>
+  document.getElementById("print")?.addEventListener("click", () => window.print());
+</script>
+
+<style>
+  .resume-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .resume-head p { margin: 4px 0; }
+  .resume h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 32px; }
+  .resume h3 { margin: 0; }
+  .job { margin-bottom: 12px; }
+  .job-head { display: flex; justify-content: space-between; gap: 4px 16px; flex-wrap: wrap; align-items: baseline; }
+  .job ul { margin-top: 6px; }
+  .skills { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+  .skills dt { font-weight: 600; }
+  .skills dd { margin: 0; }
+
+  @media print {
+    :global(.site-header), :global(.site-footer), .no-print { display: none !important; }
+    :global(body) { font-size: 11pt; line-height: 1.45; background: #fff; color: #000; }
+    :global(.container) { max-width: none; padding: 0; }
+    :global(a) { color: #000; text-decoration: none; }
+    .resume h2 { margin-top: 14pt; }
+    .job { break-inside: avoid; }
+    @page { margin: 16mm 16mm; }
+  }
+</style>

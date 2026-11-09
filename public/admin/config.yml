@@ -1,0 +1,92 @@
+# Web editor at https://<your-domain>/admin
+# Every save is a commit to GitHub; Cloudflare Pages rebuilds the site automatically.
+backend:
+  name: github
+  repo: yourhandle/personal-site # TODO: your GitHub user/repo
+  branch: main
+
+media_folder: public/images/uploads
+public_folder: /images/uploads
+
+collections:
+  - name: blog
+    label: Blog posts
+    label_singular: Blog post
+    folder: src/content/blog
+    create: true
+    # The file name becomes the URL: /blog/<slug>. Keep it short, English, hyphenated.
+    slug: "{{slug}}"
+    identifier_field: title
+    sortable_fields: [date, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description (for Google and social cards), widget: text }
+      - { name: date, label: Published, widget: datetime, format: "YYYY-MM-DD", time_format: false }
+      - { name: updated, label: Updated, widget: datetime, format: "YYYY-MM-DD", time_format: false, required: false }
+      - { name: tags, label: Tags, widget: list, required: false, default: [] }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: body, label: Body, widget: markdown }
+
+  - name: notes
+    label: Notes
+    label_singular: Note
+    folder: src/content/notes
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{hour}}{{minute}}"
+    summary: "{{date}}"
+    fields:
+      - { name: date, label: Date, widget: datetime }
+      - { name: source, label: Source, widget: select, options: [site, x], default: site }
+      - { name: url, label: Link to post on X, widget: string, required: false }
+      - { name: body, label: Text, widget: markdown }
+
+  - name: data
+    label: Resume
+    files:
+      - name: resume
+        label: Resume
+        file: src/data/resume.json
+        format: json
+        fields:
+          - { name: name, label: Name, widget: string }
+          - { name: headline, label: Headline, widget: string }
+          - { name: location, label: Location, widget: string }
+          - { name: email, label: Email, widget: string, required: false }
+          - { name: phone, label: Phone, widget: string, required: false }
+          - name: links
+            label: Links
+            widget: list
+            fields:
+              - { name: label, label: Label, widget: string }
+              - { name: url, label: URL, widget: string }
+          - { name: summary, label: Summary, widget: text }
+          - name: experience
+            label: Experience
+            widget: list
+            fields:
+              - { name: role, label: Role, widget: string }
+              - { name: company, label: Company, widget: string }
+              - { name: location, label: Location, widget: string }
+              - { name: start, label: Start, widget: string }
+              - { name: end, label: End, widget: string }
+              - { name: highlights, label: Highlights, widget: list, field: { name: item, label: Highlight, widget: text } }
+          - name: skills
+            label: Skills
+            widget: list
+            fields:
+              - { name: group, label: Group, widget: string }
+              - { name: items, label: Items, widget: list }
+          - name: education
+            label: Education
+            widget: list
+            fields:
+              - { name: degree, label: Degree, widget: string }
+              - { name: school, label: School, widget: string }
+              - { name: start, label: Start, widget: string }
+              - { name: end, label: End, widget: string }
+          - name: languages
+            label: Languages
+            widget: list
+            fields:
+              - { name: language, label: Language, widget: string }
+              - { name: level, label: Level, widget: string }

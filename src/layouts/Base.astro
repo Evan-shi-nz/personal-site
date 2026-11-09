@@ -1,0 +1,90 @@
+---
+import "../styles/global.css";
+import { site } from "../site.config";
+
+interface Props {
+  title?: string;
+  description?: string;
+  type?: "website" | "article";
+  published?: Date;
+  noindex?: boolean;
+}
+
+const { title, description = site.description, type = "website", published, noindex = false } = Astro.props;
+const fullTitle = title ? `${title} | ${site.name}` : `${site.name}: ${site.tagline}`;
+const canonical = new URL(Astro.url.pathname.replace(/\/$/, "") || "/", Astro.site);
+const image = new URL(site.avatar, Astro.site);
+const path = Astro.url.pathname;
+const nav = [
+  ["/blog", "Blog"],
+  ["/notes", "Notes"],
+  ["/resume", "Resume"],
+  ["/revenue", "Revenue"],
+];
+
+const sameAs = [site.links.x, site.links.linkedin, site.links.github].filter(Boolean);
+const jsonLd =
+  type === "article"
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: title,
+        description,
+        datePublished: published?.toISOString(),
+        author: { "@type": "Person", name: site.name, url: site.url },
+        mainEntityOfPage: canonical.href,
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name: site.name,
+        url: site.url,
+        image: image.href,
+        description: site.tagline,
+        sameAs,
+      };
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/images/avatar-64.png" type="image/png" />
+    <link rel="alternate" type="application/rss+xml" title={`${site.name} blog`} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={image.href} />
+    <meta property="og:locale" content={site.locale} />
+    <meta name="twitter:card" content="summary" />
+    {site.links.x && <meta name="twitter:creator" content={"@" + site.links.x.split("/").pop()} />}
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body>
+    <div class="container">
+      <header class="site-header">
+        <a class="home" href="/">{site.name}</a>
+        <nav aria-label="Main">
+          {nav.map(([href, label]) => (
+            <a href={href} aria-current={path.startsWith(href) ? "page" : undefined}>{label}</a>
+          ))}
+        </nav>
+      </header>
+      <main>
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <span>© {new Date().getFullYear()} {site.name}</span>
+        <span>
+          <a href="/rss.xml">RSS</a> · <a href={site.repos.site}>Source on GitHub</a>
+        </span>
+      </footer>
+    </div>
+  </body>
+</html>

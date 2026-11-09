@@ -1,0 +1,10 @@
+---
+import { site } from "../site.config";
+const { x, linkedin, github, email } = site.links;
+---
+<div class="social">
+  {x && <a href={x} rel="me">X / Twitter</a>}
+  {linkedin && <a href={linkedin} rel="me">LinkedIn</a>}
+  {github && <a href={github} rel="me">GitHub</a>}
+  {email && <span>{email}</span>}
+</div>

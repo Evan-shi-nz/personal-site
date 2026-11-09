@@ -1,0 +1,109 @@
+/* Plain, content-first. Black and white, the colours of New Zealand's silver fern. */
+:root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted: #666b6a;
+  --line: #e6e8e7;
+  --soft: #f5f6f5;
+  --accent: #111111;
+  --good: #1d7a4f;
+  --font: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d0d;
+    --fg: #ececec;
+    --muted: #9a9f9d;
+    --line: #262827;
+    --soft: #171818;
+    --accent: #ffffff;
+    --good: #5cc28f;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 17px/1.7 var(--font);
+}
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px max(20px, env(safe-area-inset-right)) 64px max(20px, env(safe-area-inset-left));
+}
+a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.3; text-wrap: balance; }
+h1 { font-size: 2rem; margin: 0 0 8px; }
+h2 { font-size: 1.25rem; margin: 48px 0 12px; }
+h3 { font-size: 1.05rem; margin: 24px 0 4px; }
+p, ul, ol { margin: 0 0 16px; }
+img { max-width: 100%; height: auto; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+pre { font-family: var(--mono); font-size: 14px; background: var(--soft); padding: 14px 16px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+blockquote { margin: 0 0 16px; padding-left: 16px; border-left: 3px solid var(--line); color: var(--muted); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; }
+.table-wrap { overflow-x: auto; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+
+/* Header */
+.site-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
+.site-header .home { font-weight: 700; text-decoration: none; }
+.site-header nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; }
+.site-header nav a { text-decoration: none; color: var(--muted); }
+.site-header nav a[aria-current="page"], .site-header nav a:hover { color: var(--fg); }
+
+/* Home */
+.intro { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.intro img { width: 96px; height: 96px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px var(--line); }
+.intro h1 { margin: 0; }
+.intro p { margin: 4px 0 0; color: var(--muted); }
+.social { display: flex; gap: 16px; flex-wrap: wrap; font-size: 15px; margin-top: 16px; }
+
+/* Lists of posts and notes */
+.post-list { list-style: none; padding: 0; margin: 0; }
+.post-list li { display: flex; gap: 16px; padding: 6px 0; align-items: baseline; }
+.post-list time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; flex: none; width: 92px; }
+.post-list a { text-decoration: none; }
+.post-list a:hover { text-decoration: underline; }
+.note { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.note-body p:last-child { margin-bottom: 4px; }
+.note-meta { font-size: 14px; color: var(--muted); }
+
+/* Article */
+.post-header { margin-bottom: 32px; }
+.post-header .meta { color: var(--muted); font-size: 15px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.prose h2 { margin-top: 40px; }
+
+/* Revenue */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0 24px; }
+.stat { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.stat .label { font-size: 13px; color: var(--muted); }
+.stat .value { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.key-box { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.key-box code { flex: 1 1 260px; min-width: 0; padding: 10px 12px; overflow-wrap: anywhere; font-size: 14px; }
+button { font: inherit; font-size: 14px; padding: 8px 14px; border: 1px solid var(--fg); background: var(--fg); color: var(--bg); border-radius: 8px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.ok { color: var(--good); }
+.bars { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin: 8px 0 4px; }
+.bars span { flex: 1; background: var(--fg); border-radius: 3px 3px 0 0; min-height: 2px; }
+
+/* Footer */
+.site-footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+.site-footer a { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

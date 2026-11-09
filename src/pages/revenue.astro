@@ -1,0 +1,138 @@
+---
+import Base from "../layouts/Base.astro";
+import { site } from "../site.config";
+
+// Set in Cloudflare Pages → Settings → Variables (used at build time and by /api/revenue).
+const key = import.meta.env.PUBLIC_STRIPE_VERIFY_KEY ?? "";
+const command = `node verify.mjs ${key || "rk_live_..."} --compare ${new URL("/api/revenue", site.url).href}`;
+---
+<Base title="Revenue" description="My product revenue, read live from Stripe, with a public key anyone can use to verify it.">
+  <h1>Revenue</h1>
+  <p>
+    I run small online products. I don't name them here, but the money they make is real.
+    The numbers below come straight from Stripe, and you can check them yourself.
+  </p>
+
+  <div id="revenue" aria-live="polite">
+    <p class="muted">Loading numbers from Stripe…</p>
+  </div>
+
+  <h2>Verify it yourself</h2>
+  <p>
+    This is a Stripe <strong>restricted key</strong> with only <code>Balance: Read</code> permission.
+    It can see my balance and the amount of each transaction. It cannot see customers, emails, products
+    or anything else, and it cannot change anything.
+  </p>
+  {key ? (
+    <div class="key-box">
+      <code id="key">{key}</code>
+      <button type="button" data-copy="key">Copy key</button>
+    </div>
+  ) : (
+    <p class="muted">The verification key has not been published yet.</p>
+  )}
+
+  <h3>Option 1: the open-source verifier</h3>
+  <p>
+    <a href={site.repos.verifier}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
+    It first confirms that this key <em>cannot</em> read customer data, then adds up every transaction and compares the
+    result with this page.
+  </p>
+  <pre><code id="cmd">git clone {site.repos.verifier}
+cd stripe-revenue-verifier
+{command}</code></pre>
+  <button type="button" data-copy="cmd">Copy commands</button>
+
+  <h3>Option 2: ask Stripe directly</h3>
+  <pre><code>curl https://api.stripe.com/v1/balance -u {key || "rk_live_..."}:</code></pre>
+
+  <h3>How the numbers are calculated</h3>
+  <ul>
+    <li><strong>Gross</strong>: every successful payment.</li>
+    <li><strong>Net</strong>: gross minus refunds, disputes and Stripe fees.</li>
+    <li>Payouts to my bank and transfers are not revenue and are left out.</li>
+    <li>Numbers refresh every 6 hours. This page and the verifier use <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`}>the same code</a>.</li>
+  </ul>
+</Base>
+
+<script>
+  type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
+  type Data = {
+    generatedAt: string;
+    complete: boolean;
+    currencies: Record<string, { total: Bucket; months: Record<string, Bucket> }>;
+    last30Days: Record<string, Bucket>;
+    error?: string;
+  };
+
+  const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
+  const money = (minor: number, cur: string) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase(), maximumFractionDigits: 0 }).format(
+      zeroDecimal.has(cur) ? minor : minor / 100,
+    );
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+  async function load() {
+    const box = document.getElementById("revenue")!;
+    try {
+      const res = await fetch("/api/revenue");
+      const data: Data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+      const currencies = Object.entries(data.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross);
+      if (currencies.length === 0) {
+        box.innerHTML = `<p class="muted">No payments yet.</p>`;
+        return;
+      }
+      box.innerHTML = currencies
+        .map(([cur, c]) => {
+          const l30 = data.last30Days[cur];
+          const months = Object.entries(c.months).slice(-12);
+          const max = Math.max(1, ...months.map(([, m]) => m.gross));
+          const bars = months
+            .map(([m, b]) => `<span style="height:${Math.round((b.gross / max) * 100)}%" title="${m}: ${money(b.gross, cur)}"></span>`)
+            .join("");
+          return `
+            <h2>${esc(cur.toUpperCase())}</h2>
+            <div class="stats">
+              <div class="stat"><div class="label">Last 30 days, gross</div><div class="value">${money(l30?.gross ?? 0, cur)}</div></div>
+              <div class="stat"><div class="label">All time, gross</div><div class="value">${money(c.total.gross, cur)}</div></div>
+              <div class="stat"><div class="label">All time, net</div><div class="value">${money(c.total.net, cur)}</div></div>
+              <div class="stat"><div class="label">Payments</div><div class="value">${c.total.payments.toLocaleString("en-US")}</div></div>
+            </div>
+            ${months.length > 1 ? `<div class="small muted">Gross per month, last ${months.length} months</div>
+            <div class="bars" role="img" aria-label="Monthly gross revenue">${bars}</div>
+            <div class="small muted" style="display:flex;justify-content:space-between"><span>${months[0][0]}</span><span>${months[months.length - 1][0]}</span></div>` : ""}`;
+        })
+        .join("");
+      box.insertAdjacentHTML(
+        "beforeend",
+        `<p class="small muted" style="margin-top:12px">Read from Stripe at ${new Date(data.generatedAt).toLocaleString("en-NZ")}${
+          data.complete ? "" : " (oldest transactions not included yet)"
+        }.</p>`,
+      );
+    } catch (err) {
+      box.innerHTML = `<p class="muted">Couldn't load the numbers right now (${esc(String((err as Error).message))}). The verification commands below still work.</p>`;
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>("button[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = document.getElementById(btn.dataset.copy!)?.textContent ?? "";
+      const label = btn.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Copied";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById(btn.dataset.copy!)!);
+        getSelection()?.removeAllRanges();
+        getSelection()?.addRange(range);
+        btn.textContent = "Selected, press Ctrl+C";
+      }
+      setTimeout(() => (btn.textContent = label), 2000);
+    });
+  });
+
+  load();
+</script>

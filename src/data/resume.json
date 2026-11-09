@@ -1,0 +1,50 @@
+{
+  "name": "Your Name",
+  "headline": "Full-stack Developer · Indie Maker",
+  "location": "China (relocating to New Zealand)",
+  "email": "",
+  "phone": "",
+  "links": [
+    { "label": "Website", "url": "https://example.com" },
+    { "label": "GitHub", "url": "https://github.com/yourhandle" },
+    { "label": "LinkedIn", "url": "https://www.linkedin.com/in/yourhandle" }
+  ],
+  "summary": "TODO: Two or three sentences. What you build, how many years, the strongest proof (for example: built and run two paid web products on my own, with verified revenue).",
+  "experience": [
+    {
+      "role": "Independent Product Developer",
+      "company": "Self-employed",
+      "location": "Remote",
+      "start": "2024",
+      "end": "Present",
+      "highlights": [
+        "Built, launched and run two subscription web products end to end: product, code, payments, marketing and support.",
+        "Revenue is processed by Stripe and publicly verifiable on my website.",
+        "TODO: add one measurable result (users, revenue, growth, uptime)."
+      ]
+    },
+    {
+      "role": "TODO: Job title",
+      "company": "TODO: Company",
+      "location": "TODO: City, China",
+      "start": "TODO",
+      "end": "TODO",
+      "highlights": [
+        "TODO: Start each line with a verb and include a number where you can.",
+        "TODO: Second achievement."
+      ]
+    }
+  ],
+  "skills": [
+    { "group": "Languages", "items": ["TypeScript", "JavaScript", "TODO"] },
+    { "group": "Frameworks", "items": ["React", "Next.js", "Astro", "TODO"] },
+    { "group": "Infrastructure", "items": ["Cloudflare", "Stripe", "TODO"] }
+  ],
+  "education": [
+    { "degree": "TODO: Bachelor of ...", "school": "TODO: University", "start": "TODO", "end": "TODO" }
+  ],
+  "languages": [
+    { "language": "Mandarin Chinese", "level": "Native" },
+    { "language": "English", "level": "Professional working proficiency (IELTS Academic in progress)" }
+  ]
+}

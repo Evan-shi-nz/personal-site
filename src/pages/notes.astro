@@ -1,0 +1,25 @@
+---
+import Base from "../layouts/Base.astro";
+import Social from "../components/Social.astro";
+import { render } from "astro:content";
+import { getNotes, formatDate } from "../lib/content";
+import { site } from "../site.config";
+
+const notes = await getNotes();
+const rendered = await Promise.all(notes.map(async (n) => ({ note: n, Content: (await render(n)).Content })));
+---
+<Base title="Notes" description="Short updates, most of them first posted on X.">
+  <h1>Notes</h1>
+  <p class="muted">Short updates. Most of them were first posted on <a href={site.links.x}>X</a>.</p>
+  {rendered.length === 0 && <p class="muted">Nothing here yet.</p>}
+  {rendered.map(({ note, Content }) => (
+    <article class="note" id={note.id}>
+      <div class="note-body"><Content /></div>
+      <div class="note-meta">
+        <a href={`#${note.id}`}>{formatDate(note.data.date)}</a>
+        {note.data.url && <> · <a href={note.data.url}>on X</a></>}
+      </div>
+    </article>
+  ))}
+  <Social />
+</Base>
