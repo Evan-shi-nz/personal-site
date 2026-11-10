@@ -1,9 +1,10 @@
 # personal-site
 
-My personal website: blog, short notes synced from X, resume, and publicly verifiable revenue.
+Evan Shi's personal website: blog, notes synced from X, guestbook, resume, and publicly verifiable revenue.
 
-- **Static site** built with [Astro](https://astro.build), hosted on **Cloudflare Workers** (static assets plus one small API route). No server of my own.
+- **Static site** built with [Astro](https://astro.build), hosted entirely on **Cloudflare**: Workers static assets, a small Worker API, D1 for the guestbook and a Cron Trigger that syncs posts from X. No server of my own.
 - **Revenue is verifiable.** `/revenue` publishes a Stripe key that can only read my balance. Anyone can check the numbers with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code as this site.
+- **Notes from X** get readable URLs made from their words (`/notes/ielts-day-1-writing-task-2`) and link back to the original post.
 - **Editable in the browser** at `/admin` ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)). Every save is a Git commit.
 
 ---
@@ -16,9 +17,10 @@ My personal website: blog, short notes synced from X, resume, and publicly verif
 2. [第一次上线（按顺序做一遍）](#第一次上线按顺序做一遍)
 3. [日常写作](#日常写作)
 4. [X（推特）同步](#x推特同步)
-5. [本地开发与预览](#本地开发与预览)
-6. [收入验证是怎么工作的](#收入验证是怎么工作的)
-7. [常见问题](#常见问题)
+5. [留言板](#留言板)
+6. [本地开发与预览](#本地开发与预览)
+7. [收入验证是怎么工作的](#收入验证是怎么工作的)
+8. [常见问题](#常见问题)
 
 ## 项目结构
 
@@ -28,11 +30,16 @@ personal-site/
 │   ├── site.config.ts          ← 名字、域名、社交链接、首页 "Now"（最常改）
 │   ├── data/resume.json        ← 简历内容
 │   ├── content/blog/*.md       ← 博客文章，文件名 = 网址
-│   ├── content/notes/*.md      ← 短动态（手写或从 X 同步）
+│   ├── content/notes/*.md      ← 短动态（手写或从 X 自动同步），网址由内容生成
+│   ├── data/x-sync.json        ← X 同步进度（自动维护，不用手改）
 │   ├── pages/                  ← 各页面模板
 │   └── styles/global.css       ← 样式
 ├── wrangler.jsonc              ← Cloudflare Workers 配置
-├── worker/index.js             ← Worker 入口：只处理 /api/*，其余是静态文件
+├── worker/
+│   ├── index.js                ← Worker 入口：/api/* 和定时任务，其余是静态文件
+│   ├── guestbook.js            ← 留言板接口（D1 数据库）
+│   └── x-sync.js               ← 定时把 X 新帖子提交成笔记
+├── lib/notes.mjs               ← 推文 → 笔记、按内容生成网址
 ├── functions/
 │   ├── api/revenue.js          ← /api/revenue 的实现
 │   └── _lib/revenue.mjs        ← 收入计算（与验证工具完全相同）
@@ -41,17 +48,20 @@ personal-site/
 │   ├── images/avatar-og.jpg    ← 分享卡片图（512×512）
 │   ├── images/avatar-64.png    ← 浏览器标签图标
 │   └── admin/                  ← 网页写作后台
-├── scripts/                    ← X 同步、X 存档导入
-└── .github/workflows/sync-x.yml ← 定时同步 X
+├── scripts/import-x-archive.mjs ← 一次性导入 X 历史帖子
+└── tests/                      ← npm test
 ```
 
 | 网址 | 内容 |
 |---|---|
 | `/` | 头像、简介、Now、最新文章和动态 |
-| `/blog`、`/blog/<文件名>` | 文章列表、文章页 |
-| `/notes` | 短动态 |
+| `/blog`、`/blog/page/2`… | 文章列表，每页 10 篇 |
+| `/blog/<文件名>` | 文章页 |
+| `/notes`、`/notes/page/2`… | 短动态列表，每页 20 条 |
+| `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
+| `/guestbook` | 留言板 |
 | `/resume` | 英文简历，按钮可另存为 PDF |
-| `/revenue` | 收入汇总、公开验证 Key、验证命令 |
+| `/revenue` | 收入仪表盘（近 30 天、环比、累计、按天/按月图表）、公开验证 Key、验证命令 |
 | `/admin` | 写作后台（不会被搜索引擎收录） |
 | `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 
@@ -72,10 +82,15 @@ personal-site/
 
 ### 第 2 步：创建只读的 Stripe Key
 
-1. 打开 Stripe 后台 → **Developers → API keys → Create restricted key**。
-2. 名字填 `public-revenue-verify`。
-3. 只把 **Balance** 设为 **Read**，其它全部保持 **None**。
-4. 用验证工具自查，第 1 步必须全部显示 `refused`：
+这个 Key 会**公开显示在网站上**，所以它只能有一项权限：读取余额。
+
+1. 登录 Stripe 后台，确认右上角是 **正式模式**（不是 Test mode / 沙盒）。
+2. 进入 **开发者（Developers）→ API 密钥（API keys）**。
+3. 在 **受限密钥（Restricted keys）** 区域点 **创建受限密钥（Create restricted key）**。如果弹出"你打算如何使用这个密钥"，选 **为自己的集成（Building your own integration）**。
+4. 名字填 `public-revenue-verify`。
+5. 权限列表里**只把 Balance（余额）设为 Read（读取）**，其余全部保持 **None（无）**。
+6. 点 **创建密钥**，复制以 `rk_live_` 开头的那串字符。
+7. 用验证工具自查。第 1 步的 5 行必须全部是 `✓ refused`，否则说明权限给多了，删掉重建：
 
    ```bash
    git clone https://github.com/Evan-shi-nz/stripe-revenue-verifier
@@ -83,11 +98,13 @@ personal-site/
    node verify.mjs rk_live_你的Key
    ```
 
-5. 看一眼别人用这个 Key 能看到什么，确认 `description` 里没有客户姓名或邮箱：
+8. 再看一眼别人用这个 Key 能看到什么，确认 `description` 里没有客户姓名或邮箱：
 
    ```bash
    curl "https://api.stripe.com/v1/balance_transactions?limit=20" -u rk_live_你的Key:
    ```
+
+即使跳过第 7 步，网站也会自己检查：如果配置的 Key 能读取订单（charges），收入接口会拒绝工作，不会把它展示出来。
 
 > ⚠️ **不要把 Key 写进代码或提交到 GitHub。** GitHub 会自动扫描 Stripe Key 并通知 Stripe，Key 可能被作废。Key 只放在 Cloudflare 的环境变量里（第 3 步）。
 >
@@ -116,6 +133,8 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
    | 文本（Text） | `PUBLIC_STRIPE_VERIFY_KEY` | `rk_live_...`（第 2 步的 Key） |
 
    保存后立即生效，不需要重新构建。`wrangler.jsonc` 里设置了 `keep_vars: true`，以后自动部署不会把它清掉。
+
+6. 留言板数据库：**不用手动创建**。第一次部署时 Wrangler 会自动在你的账号里创建名为 `personal-site-guestbook` 的 D1 数据库，表结构在第一次有人访问留言板时自动建立。
 
 之后每次推送到 `main` 分支，Cloudflare 都会自动重新构建和部署。
 
@@ -152,26 +171,53 @@ draft: false
 
 ## X（推特）同步
 
-两种方式可以同时用。
+每条帖子会变成网站上的一条笔记：
 
-**A. 自动同步（需要 X API 付费权限）**
+- 网址由帖子内容生成，比如 "Day 1 of IELTS prep: Writing Task 2 is hard" → `/notes/day-1-ielts-prep-writing-task-2-hard`，中文帖子 → `/notes/今天开始备考雅思-写作好难`。重名时自动加日期。
+- 每条笔记页都有 **View on X ↗** 链接，指回原帖。
+- 只同步原创帖子，不包括回复和转帖。
 
-1. 在 [developer.x.com](https://developer.x.com) 获取 Bearer Token（读取帖子是付费功能，开启前请确认当前价格）。
-2. GitHub 仓库 → Settings → Secrets and variables → Actions：
-   - **Secrets** 添加 `X_BEARER_TOKEN`
-   - **Variables** 添加 `X_USERNAME`（你的 X 用户名，不带 @）
-3. 之后每 12 小时自动同步一次原创帖子（不包括回复和转帖）。也可以在 Actions 页面点 **Run workflow** 手动运行。
+**A. 自动同步（Cloudflare 定时任务）**
 
-没有设置这两项时，这个任务会自动跳过，不会报错。
+`wrangler.jsonc` 里配置了每 3 小时运行一次的 Cron Trigger。它从 X 读取新帖子，以一次提交的形式写进 GitHub 仓库，Cloudflare 随即自动重新部署。需要在 Worker → **设置 → 变量和机密** 里添加两个**机密（Secret）**：
+
+| 名称 | 从哪里获取 |
+|---|---|
+| `X_BEARER_TOKEN` | [developer.x.com](https://developer.x.com) 创建应用后的 Bearer Token。读取帖子是 X API 的付费功能，开启前请确认当前价格 |
+| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → Fine-grained tokens：Repository access 只选 `personal-site`，Permissions → **Contents: Read and write** |
+
+没设置这两项时，定时任务会直接跳过，不会报错。X 用户名、仓库名在 `wrangler.jsonc` 的 `vars` 里，已经填好。
+
+想马上运行一次：Worker → **设置 → 触发事件（Triggers）→ Cron 触发器**，点运行（Trigger）。
 
 **B. 免费导入历史帖子**
 
-X → 设置 → 你的账号 → **下载数据存档**，解压后运行：
+X → 设置 → 你的账号 → **下载数据存档**，解压后在自己电脑上运行：
 
 ```bash
-node scripts/import-x-archive.mjs 存档路径/data/tweets.js 你的X用户名
+node scripts/import-x-archive.mjs 存档路径/data/tweets.js EvanShi_nz
+```
+
+```bash
 git add src/content/notes && git commit -m "Import X archive" && git push
 ```
+
+已经导入过的帖子会自动跳过，可以重复运行。
+
+## 留言板
+
+- 访客填写名字、邮箱（必填，**不会公开**）和留言，不需要验证码。
+- 防垃圾留言：隐藏的诱饵字段、打开页面 3 秒内提交视为机器人、同一访客 1 分钟内只能发 1 条、每天最多 10 条、最多 2 个链接、24 小时内重复内容会被拒绝。
+- 数据存在 Cloudflare D1。查看、隐藏或删除留言：Cloudflare 控制台 → **存储和数据库 → D1 → personal-site-guestbook → 控制台（Console）**：
+
+  ```sql
+  -- 查看最新留言（含邮箱）
+  SELECT id, name, email, message, created_at FROM guestbook ORDER BY id DESC LIMIT 50;
+  -- 隐藏一条（不删除）
+  UPDATE guestbook SET hidden = 1 WHERE id = 123;
+  -- 彻底删除
+  DELETE FROM guestbook WHERE id = 123;
+  ```
 
 ## 本地开发与预览
 
@@ -184,12 +230,18 @@ npm run dev
 
 打开 http://localhost:4321 。修改文件后页面会自动刷新。
 
-`npm run dev` 不运行 Worker，所以收入页会显示 "Couldn't load"，这是正常的。要在本地模拟 Cloudflare 环境、连同收入接口一起测试：
+`npm run dev` 不运行 Worker，所以收入页和留言板会显示加载失败，这是正常的。要在本地模拟 Cloudflare 环境（包括本地的 D1 数据库）：
 
 ```bash
 cp .dev.vars.example .dev.vars   # 然后在 .dev.vars 里填入 Key
 npm run build
 npm run preview                  # http://localhost:8787
+```
+
+运行测试（X 同步逻辑，不联网）：
+
+```bash
+npm test
 ```
 
 ## 收入验证是怎么工作的

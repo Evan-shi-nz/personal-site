@@ -1,0 +1,23 @@
+---
+import Base from "../../layouts/Base.astro";
+import NoteCard from "../../components/NoteCard.astro";
+import { getNotes, noteText, noteTitle, truncate } from "../../lib/content";
+
+// One page per note, at a URL made from its words: /notes/<slug>
+export async function getStaticPaths() {
+  const notes = await getNotes();
+  return notes.map((note, i) => ({
+    params: { slug: note.id },
+    props: { note, newer: notes[i - 1], older: notes[i + 1] },
+  }));
+}
+const { note, newer, older } = Astro.props;
+---
+<Base title={noteTitle(note)} description={truncate(noteText(note), 160)} type="article" published={note.data.date}>
+  <NoteCard note={note} standalone />
+  <nav class="pager" aria-label="More notes">
+    {newer ? <a href={`/notes/${newer.id}`} rel="prev">← Newer</a> : <span />}
+    <a href="/notes">All notes</a>
+    {older ? <a href={`/notes/${older.id}`} rel="next">Older →</a> : <span />}
+  </nav>
+</Base>

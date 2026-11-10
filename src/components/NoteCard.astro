@@ -1,0 +1,24 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { render } from "astro:content";
+import { formatDate, isoDate } from "../lib/content";
+
+interface Props {
+  note: CollectionEntry<"notes">;
+  // On the note's own page the date is not a link
+  standalone?: boolean;
+}
+const { note, standalone = false } = Astro.props;
+const { Content } = await render(note);
+---
+<article class:list={["note", { standalone }]}>
+  <div class="note-body"><Content /></div>
+  <div class="note-meta">
+    {standalone ? (
+      <time datetime={isoDate(note.data.date)}>{formatDate(note.data.date)}</time>
+    ) : (
+      <a href={`/notes/${note.id}`}><time datetime={isoDate(note.data.date)}>{formatDate(note.data.date)}</time></a>
+    )}
+    {note.data.url && <> · <a href={note.data.url} rel="noopener">View on X ↗</a></>}
+  </div>
+</article>

@@ -1,0 +1,17 @@
+---
+import { pageHref } from "../lib/content";
+
+interface Props {
+  base: string;
+  page: number;
+  pages: number;
+}
+const { base, page, pages } = Astro.props;
+---
+{pages > 1 && (
+  <nav class="pager" aria-label="Pages">
+    {page > 1 ? <a href={pageHref(base, page - 1)} rel="prev">← Newer</a> : <span />}
+    <span class="muted small">Page {page} of {pages}</span>
+    {page < pages ? <a href={pageHref(base, page + 1)} rel="next">Older →</a> : <span />}
+  </nav>
+)}

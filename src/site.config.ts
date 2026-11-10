@@ -1,27 +1,27 @@
 // Everything personal lives here and in src/data/resume.json.
-// Search for "TODO" to find what still needs your details.
 
 export const site = {
-  // TODO: your domain, e.g. https://yourname.com (used for SEO, sitemap and RSS)
-  url: "https://personal-site.ssgooglx.workers.dev", // TODO: replace with your own domain later
-  // TODO: your name as you want employers to see it
-  name: "Your Name",
+  // TODO: replace with your own domain later (used for SEO, sitemap and RSS)
+  url: "https://personal-site.ssgooglx.workers.dev",
+  name: "Evan Shi",
   // One line under your name on the home page
   tagline: "Software developer and indie maker, on my way from China to New Zealand.",
   // Used in <meta name="description"> and search results
   description:
-    "Personal site of an indie maker moving from China to New Zealand: IELTS progress, building online products, verified revenue and resume.",
+    "Evan Shi: indie maker moving from China to New Zealand. IELTS preparation, building online products, verified revenue and resume.",
   locale: "en_NZ",
   avatar: "/images/avatar.webp",
   // Square image for link previews on X, LinkedIn, etc.
   ogImage: "/images/avatar-og.jpg",
   links: {
-    // TODO: fill in or set to "" to hide
-    x: "", // TODO: e.g. "https://x.com/yourhandle"
-    linkedin: "", // TODO: e.g. "https://www.linkedin.com/in/yourhandle"
+    // Set any of these to "" to hide it
+    x: "https://x.com/EvanShi_nz",
+    linkedin: "",
     github: "https://github.com/Evan-shi-nz",
-    email: "",
+    email: "nz.evanshi@gmail.com",
   },
+  // X username without @, used to link notes back to their original posts
+  xUsername: "EvanShi_nz",
   // Public GitHub repos people can inspect
   repos: {
     site: "https://github.com/Evan-shi-nz/personal-site",
@@ -29,8 +29,10 @@ export const site = {
   },
   // Shown on the home page; keep it short and current
   now: [
-    "Studying for IELTS Academic, aiming for 7.0 overall",
+    "Preparing for the IELTS Academic test",
     "Running two small online products on my own",
-    "Preparing to move to New Zealand",
+    "Planning my move to New Zealand",
   ],
+  // Items per page
+  pageSize: { blog: 10, notes: 20 },
 };

@@ -1,0 +1,20 @@
+---
+import Base from "../../../layouts/Base.astro";
+import NoteCard from "../../../components/NoteCard.astro";
+import Pager from "../../../components/Pager.astro";
+import { getNotes, paginate } from "../../../lib/content";
+import { site } from "../../../site.config";
+
+// Page 1 is /notes; this route builds /notes/page/2 onwards.
+export async function getStaticPaths() {
+  return paginate(await getNotes(), site.pageSize.notes)
+    .slice(1)
+    .map((p) => ({ params: { page: String(p.page) }, props: p }));
+}
+const { items, page, pages } = Astro.props;
+---
+<Base title={`Notes, page ${page}`} description={`Short updates from Evan Shi, page ${page} of ${pages}.`}>
+  <h1>Notes</h1>
+  {items.map((note) => <NoteCard note={note} />)}
+  <Pager base="/notes" page={page} pages={pages} />
+</Base>

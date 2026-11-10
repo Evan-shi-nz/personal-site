@@ -1,24 +1,15 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { getPosts, formatDate, isoDate } from "../../lib/content";
+import PostList from "../../components/PostList.astro";
+import Pager from "../../components/Pager.astro";
+import { getPosts, paginate } from "../../lib/content";
+import { site } from "../../site.config";
 
-const posts = await getPosts();
-const byYear = Map.groupBy(posts, (p) => p.data.date.getUTCFullYear());
+const [first] = paginate(await getPosts(), site.pageSize.blog);
 ---
-<Base title="Blog" description="Notes on learning English for IELTS, moving to New Zealand and building small online products.">
+<Base title="Blog" description="Evan Shi writes about preparing for IELTS, moving to New Zealand and building small online products.">
   <h1>Blog</h1>
   <p class="muted">IELTS, moving to New Zealand, and building small products on my own.</p>
-  {[...byYear].map(([year, list]) => (
-    <>
-      <h2>{year}</h2>
-      <ul class="post-list">
-        {list.map((p) => (
-          <li>
-            <time datetime={isoDate(p.data.date)}>{formatDate(p.data.date)}</time>
-            <a href={`/blog/${p.id}`}>{p.data.title}</a>
-          </li>
-        ))}
-      </ul>
-    </>
-  ))}
+  <PostList posts={first.items} />
+  <Pager base="/blog" page={first.page} pages={first.pages} />
 </Base>

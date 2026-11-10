@@ -1,8 +1,8 @@
 {
-  "name": "Your Name",
+  "name": "Evan Shi",
   "headline": "Full-stack Developer · Indie Maker",
   "location": "China (relocating to New Zealand)",
-  "email": "",
+  "email": "nz.evanshi@gmail.com",
   "phone": "",
   "links": [
     {
@@ -12,6 +12,10 @@
     {
       "label": "GitHub",
       "url": "https://github.com/Evan-shi-nz"
+    },
+    {
+      "label": "X",
+      "url": "https://x.com/EvanShi_nz"
     }
   ],
   "summary": "TODO: Two or three sentences. What you build, how many years, the strongest proof (for example: built and run two paid web products on my own, with verified revenue).",

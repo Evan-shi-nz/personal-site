@@ -17,12 +17,15 @@ const blog = defineCollection({
   }),
 });
 
-// Short notes, including posts synced from X: src/content/notes/<id>.md
+// Short notes, including posts synced from X: src/content/notes/<slug>.md
+// The `slug` field (or the file name) is the URL: /notes/<slug>
 const notes = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/notes" }),
   schema: z.object({
+    slug: z.string().optional(),
     date: z.coerce.date(),
     source: z.enum(["x", "site"]).default("site"),
+    tweetId: z.string().optional(),
     url: z.string().url().optional(),
   }),
 });

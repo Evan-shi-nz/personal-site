@@ -6,8 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "wrangler dev",
-    "sync:x": "node scripts/sync-x.mjs",
-    "import:x-archive": "node scripts/import-x-archive.mjs"
+    "import:x-archive": "node scripts/import-x-archive.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "4.0.19",

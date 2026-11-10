@@ -1,13 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
 import Social from "../components/Social.astro";
+import PostList from "../components/PostList.astro";
+import NoteCard from "../components/NoteCard.astro";
 import { site } from "../site.config";
-import { getPosts, getNotes, formatDate, isoDate } from "../lib/content";
-import { render } from "astro:content";
+import { getPosts, getNotes } from "../lib/content";
 
 const posts = (await getPosts()).slice(0, 6);
 const notes = (await getNotes()).slice(0, 3);
-const renderedNotes = await Promise.all(notes.map(async (n) => ({ note: n, Content: (await render(n)).Content })));
 ---
 <Base>
   <section class="intro">
@@ -23,35 +23,49 @@ const renderedNotes = await Promise.all(notes.map(async (n) => ({ note: n, Conte
   <ul>
     {site.now.map((item) => <li>{item}</li>)}
   </ul>
-  <p class="small muted">
-    My products earn real money. The numbers are public and anyone can <a href="/revenue">verify them against Stripe</a>.
-  </p>
+
+  <a class="rev-mini" href="/revenue" id="rev-mini" hidden>
+    <span class="small muted">Revenue, last 30 days</span>
+    <strong id="rev-mini-value"></strong>
+    <span class="small ok">✓ Verified with Stripe →</span>
+  </a>
 
   <h2>Writing</h2>
-  {posts.length === 0 && <p class="muted">No posts yet.</p>}
-  <ul class="post-list">
-    {posts.map((p) => (
-      <li>
-        <time datetime={isoDate(p.data.date)}>{formatDate(p.data.date)}</time>
-        <a href={`/blog/${p.id}`}>{p.data.title}</a>
-      </li>
-    ))}
-  </ul>
+  <PostList posts={posts} />
   <p><a href="/blog">All posts →</a></p>
 
-  {renderedNotes.length > 0 && (
+  {notes.length > 0 && (
     <>
       <h2>Latest notes</h2>
-      {renderedNotes.map(({ note, Content }) => (
-        <article class="note">
-          <div class="note-body"><Content /></div>
-          <div class="note-meta">
-            {formatDate(note.data.date)}
-            {note.data.url && <> · <a href={note.data.url}>on X</a></>}
-          </div>
-        </article>
-      ))}
+      {notes.map((note) => <NoteCard note={note} />)}
       <p><a href="/notes">All notes →</a></p>
     </>
   )}
+
+  <p class="small muted" style="margin-top:32px">Have a question or just want to say hi? <a href="/guestbook">Leave a message</a>.</p>
 </Base>
+
+<style>
+  .rev-mini { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; text-decoration: none; color: var(--fg); margin-top: 4px; }
+  .rev-mini:hover { border-color: var(--fg); }
+  .rev-mini strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+</style>
+
+<script>
+  // Shows last-30-day revenue once the verification key is connected; stays hidden otherwise.
+  fetch("/api/revenue")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d || d.error) return;
+      const [cur] = Object.entries(d.currencies ?? {}).sort((a: any, b: any) => b[1].total.gross - a[1].total.gross)[0] ?? [];
+      if (!cur) return;
+      const minor = d.last30Days?.[cur]?.gross ?? 0;
+      document.getElementById("rev-mini-value")!.textContent = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: cur.toUpperCase(),
+        maximumFractionDigits: 0,
+      }).format(minor / 100);
+      document.getElementById("rev-mini")!.hidden = false;
+    })
+    .catch(() => {});
+</script>

@@ -1,0 +1,130 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Guestbook" description="Leave a message for Evan Shi.">
+  <h1>Guestbook</h1>
+  <p class="muted">Say hi, ask a question, or share your own IELTS or New Zealand story.</p>
+
+  <form id="gb-form" class="gb-form" novalidate>
+    <div class="row">
+      <label for="gb-name"><span>Name</span>
+        <input id="gb-name" name="name" type="text" maxlength="40" autocomplete="name" required />
+      </label>
+      <label for="gb-email"><span>Email <span class="muted small">(never shown)</span></span>
+        <input id="gb-email" name="email" type="email" maxlength="254" autocomplete="email" required />
+      </label>
+    </div>
+    <label for="gb-message"><span>Message</span>
+      <textarea id="gb-message" name="message" rows="4" maxlength="1000" required></textarea>
+    </label>
+    <!-- Hidden from people; bots fill it in -->
+    <div class="hp" aria-hidden="true">
+      <label for="gb-website">Website <input id="gb-website" name="website" type="text" tabindex="-1" autocomplete="off" /></label>
+    </div>
+    <div class="actions">
+      <button type="submit" id="gb-submit">Post message</button>
+      <span id="gb-status" class="small" role="status"></span>
+    </div>
+  </form>
+
+  <h2>Messages <span class="muted small" id="gb-total"></span></h2>
+  <div id="gb-list" aria-live="polite"><p class="muted">Loading messages…</p></div>
+  <nav class="pager" id="gb-pager" aria-label="Message pages" hidden>
+    <button type="button" class="link" id="gb-newer">← Newer</button>
+    <span class="muted small" id="gb-page"></span>
+    <button type="button" class="link" id="gb-older">Older →</button>
+  </nav>
+</Base>
+
+<style>
+  .gb-form { display: flex; flex-direction: column; gap: 14px; margin: 24px 0 8px; }
+  .gb-form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .gb-form label { display: flex; flex-direction: column; gap: 4px; font-size: 15px; font-weight: 500; }
+  .gb-form input, .gb-form textarea { font: inherit; font-size: 16px; font-weight: 400; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); width: 100%; }
+  .gb-form textarea { resize: vertical; min-height: 96px; }
+  .gb-form input:focus-visible, .gb-form textarea:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
+  .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #gb-status.error { color: #d4483b; }
+  #gb-status.ok { color: var(--good); }
+  :global(.gb-entry) { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  :global(.gb-entry .who) { font-weight: 600; }
+  :global(.gb-entry .when) { color: var(--muted); font-size: 14px; }
+  :global(.gb-entry p) { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  button.link { background: none; border: 0; color: var(--fg); padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+  button.link:disabled { visibility: hidden; }
+</style>
+
+<script>
+  type Entry = { id: number; name: string; message: string; created_at: string };
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const form = $<HTMLFormElement>("gb-form");
+  const status = $("gb-status");
+  const loadedAt = Date.now();
+  let page = 1;
+
+  const esc = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  const when = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-NZ", { year: "numeric", month: "short", day: "numeric" });
+  const entryHtml = (e: Entry) =>
+    `<article class="gb-entry"><span class="who">${esc(e.name)}</span> <span class="when">· ${when(e.created_at)}</span><p>${esc(e.message)}</p></article>`;
+
+  async function load(p: number) {
+    const list = $("gb-list");
+    try {
+      const res = await fetch(`/api/guestbook?page=${p}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      page = data.page;
+      $("gb-total").textContent = data.total ? `(${data.total})` : "";
+      list.innerHTML = data.entries.length
+        ? data.entries.map(entryHtml).join("")
+        : `<p class="muted">No messages yet. Be the first to say hi.</p>`;
+      $("gb-pager").hidden = data.pages <= 1;
+      $("gb-page").textContent = `Page ${data.page} of ${data.pages}`;
+      $<HTMLButtonElement>("gb-newer").disabled = data.page <= 1;
+      $<HTMLButtonElement>("gb-older").disabled = data.page >= data.pages;
+    } catch (err) {
+      list.innerHTML = `<p class="muted">Couldn't load messages (${esc(String((err as Error).message))}).</p>`;
+    }
+  }
+
+  $("gb-newer").addEventListener("click", () => load(page - 1));
+  $("gb-older").addEventListener("click", () => load(page + 1));
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const body = Object.fromEntries(fd) as Record<string, string>;
+    status.className = "small";
+    if (!body.name.trim() || !body.email.trim() || !body.message.trim()) {
+      status.textContent = "Please fill in your name, email and message.";
+      status.classList.add("error");
+      return;
+    }
+    const btn = $<HTMLButtonElement>("gb-submit");
+    btn.disabled = true;
+    status.textContent = "Posting…";
+    try {
+      const res = await fetch("/api/guestbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, t: loadedAt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      status.textContent = "Posted. Thanks for your message!";
+      status.classList.add("ok");
+      $<HTMLTextAreaElement>("gb-message").value = "";
+      await load(1);
+    } catch (err) {
+      status.textContent = String((err as Error).message);
+      status.classList.add("error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  load(1);
+</script>

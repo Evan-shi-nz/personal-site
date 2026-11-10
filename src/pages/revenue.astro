@@ -2,26 +2,37 @@
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
-// The key itself comes from /api/revenue at runtime (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEY),
-// so changing it never needs a rebuild.
+// Numbers and the key itself come from /api/revenue at runtime
+// (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEY), so nothing here needs a rebuild.
 const apiUrl = new URL("/api/revenue", site.url).href;
 ---
-<Base title="Revenue" description="My product revenue, read live from Stripe, with a public key anyone can use to verify it.">
+<Base title="Revenue" description="Evan Shi's product revenue, read live from Stripe, with a public key anyone can use to verify it.">
   <h1>Revenue</h1>
-  <p>
+  <p class="muted">
     I run small online products. I don't name them here, but the money they make is real.
-    The numbers below come straight from Stripe, and you can check them yourself.
+    These numbers come straight from Stripe, and you can verify them yourself.
   </p>
 
-  <div id="revenue" aria-live="polite">
-    <p class="muted">Loading numbers from Stripe…</p>
-  </div>
+  <section class="rev-card" aria-live="polite">
+    <div class="rev-head">
+      <span class="badge" id="badge" hidden>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 0l2 1.6 2.5-.2.8 2.4 2.1 1.4-.8 2.4.8 2.4-2.1 1.4-.8 2.4-2.5-.2L8 16l-2-1.6-2.5.2-.8-2.4L.6 10.8l.8-2.4-.8-2.4 2.1-1.4.8-2.4 2.5.2z" fill="currentColor"/><path d="M5 8.2l2 2 4-4.2" stroke="var(--bg)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Verified with Stripe
+      </span>
+      <div class="cur-tabs" id="cur-tabs" role="tablist" aria-label="Currency"></div>
+      <span class="small muted" id="updated"></span>
+    </div>
 
-  <h2>Verify it yourself</h2>
+    <div id="rev-body">
+      <p class="muted">Loading numbers from Stripe…</p>
+    </div>
+  </section>
+
+  <h2 id="verify">Verify it yourself</h2>
   <p>
     This is a Stripe <strong>restricted key</strong> with only <code>Balance: Read</code> permission.
-    It can see my balance and the amount of each transaction. It cannot see customers, emails, products
-    or anything else, and it cannot change anything.
+    It can see my balance and the amount of each transaction. It cannot see customers, emails or products,
+    and it cannot change anything.
   </p>
   <div class="key-box" id="key-box" hidden>
     <code id="key"></code>
@@ -32,8 +43,8 @@ const apiUrl = new URL("/api/revenue", site.url).href;
   <h3>Option 1: the open-source verifier</h3>
   <p>
     <a href={site.repos.verifier}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
-    It first confirms that this key <em>cannot</em> read customer data, then adds up every transaction and compares the
-    result with this page.
+    It first confirms that this key <em>cannot</em> read customer data, then adds up every transaction from Stripe and
+    compares the result with this page.
   </p>
   <pre><code id="cmd">git clone {site.repos.verifier}
 cd stripe-revenue-verifier
@@ -41,100 +52,235 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
   <button type="button" data-copy="cmd">Copy commands</button>
 
   <h3>Option 2: ask Stripe directly</h3>
-  <pre><code>curl https://api.stripe.com/v1/balance -u <span data-key>rk_live_...</span>:</code></pre>
+  <pre><code id="curl">curl https://api.stripe.com/v1/balance -u <span data-key>rk_live_...</span>:</code></pre>
+  <button type="button" data-copy="curl">Copy command</button>
 
   <h3>How the numbers are calculated</h3>
   <ul>
-    <li><strong>Gross</strong>: every successful payment.</li>
-    <li><strong>Net</strong>: gross minus refunds, disputes and Stripe fees.</li>
+    <li><strong>Revenue</strong>: every successful payment, before fees (gross).</li>
+    <li><strong>Net</strong>: revenue minus refunds, disputes and Stripe fees.</li>
+    <li><strong>Change</strong>: the last 30 days compared with the 30 days before.</li>
     <li>Payouts to my bank and transfers are not revenue and are left out.</li>
     <li>Numbers refresh every 6 hours. This page and the verifier use <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`}>the same code</a>.</li>
   </ul>
 </Base>
 
+<style>
+  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; margin: 24px 0 8px; }
+  .rev-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rev-head #updated { margin-left: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); padding: 3px 10px 3px 8px; border-radius: 99px; }
+  /* Tabs are created by the script below, so their styles must be global */
+  :global(.cur-tabs), :global(.range-tabs) { display: inline-flex; gap: 4px; }
+  :global(.cur-tabs button), :global(.range-tabs button) { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 99px; }
+  :global(.cur-tabs button[aria-selected="true"]), :global(.range-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  :global(.kpis) { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; margin-bottom: 18px; }
+  :global(.kpi .label) { font-size: 13px; color: var(--muted); }
+  :global(.kpi .value) { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.25; }
+  :global(.kpi .delta) { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  :global(.delta.up) { color: var(--good); }
+  :global(.delta.down) { color: #d4483b; }
+  :global(.chart-head) { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  :global(.chart) { position: relative; }
+  :global(.chart svg) { display: block; width: 100%; height: 180px; }
+  :global(.chart .bar) { fill: var(--fg); pointer-events: none; }
+  :global(.chart .bar.zero) { fill: var(--line); }
+  :global(.chart .hit:hover + .bar), :global(.chart .bar.active) { fill: var(--good); }
+  :global(.chart .grid) { stroke: var(--line); stroke-width: 1; }
+  :global(.axis) { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+  :global(.tip) { position: absolute; top: 0; transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  :global(.ymax) { position: absolute; top: -2px; left: 0; font-size: 12px; color: var(--muted); background: var(--bg); padding-right: 4px; }
+  @media (max-width: 480px) { .rev-head #updated { margin-left: 0; width: 100%; } }
+</style>
+
 <script>
   type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
+  type Currency = { total: Bucket; months: Record<string, Bucket>; days: Record<string, Bucket> };
   type Data = {
     verifyKey?: string;
     generatedAt: string;
     complete: boolean;
-    currencies: Record<string, { total: Bucket; months: Record<string, Bucket> }>;
+    currencies: Record<string, Currency>;
     last30Days: Record<string, Bucket>;
+    previous30Days: Record<string, Bucket>;
     error?: string;
   };
 
   const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
-  const money = (minor: number, cur: string) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: cur.toUpperCase(), maximumFractionDigits: 0 }).format(
-      zeroDecimal.has(cur) ? minor : minor / 100,
-    );
+  const money = (minor: number, cur: string, digits = 0) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: cur.toUpperCase(),
+      maximumFractionDigits: digits,
+      minimumFractionDigits: digits,
+    }).format(zeroDecimal.has(cur) ? minor : minor / 100);
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  const $ = (id: string) => document.getElementById(id)!;
+
+  let data: Data;
+  let currency = "";
+  let range: "days" | "months" = "days";
 
   function showKey(key?: string) {
     if (!key || !key.startsWith("rk_")) return;
-    document.getElementById("key")!.textContent = key;
-    document.getElementById("key-box")!.hidden = false;
-    document.getElementById("key-missing")!.hidden = true;
+    $("key").textContent = key;
+    $("key-box").hidden = false;
+    $("key-missing").hidden = true;
     document.querySelectorAll("[data-key]").forEach((el) => (el.textContent = key));
   }
 
+  function timeAgo(iso: string) {
+    const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min} min ago`;
+    const h = Math.round(min / 60);
+    return `${h} hour${h > 1 ? "s" : ""} ago`;
+  }
+
+  function delta(now: number, before: number) {
+    if (!before) return now ? `<span class="delta up">New</span>` : `<span class="delta">–</span>`;
+    const pct = ((now - before) / before) * 100;
+    const cls = pct >= 0 ? "up" : "down";
+    return `<span class="delta ${cls}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="small muted">vs previous 30 days</span>`;
+  }
+
+  function label(key: string) {
+    if (range === "months") {
+      const [y, m] = key.split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" });
+    }
+    return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" });
+  }
+
+  function chart(series: [string, Bucket][], cur: string) {
+    if (series.length === 0) return `<p class="muted small">No data for this range yet.</p>`;
+    const W = 600, H = 180, gap = series.length > 40 ? 1 : 3;
+    const max = Math.max(1, ...series.map(([, b]) => b.gross));
+    const bw = (W - gap * (series.length - 1)) / series.length;
+    const bars = series
+      .map(([k, b], i) => {
+        const h = b.gross > 0 ? Math.max(2, (b.gross / max) * (H - 16)) : 2;
+        const x = i * (bw + gap);
+        return `<rect class="hit" x="${x}" y="0" width="${bw + gap}" height="${H}" fill="transparent" data-i="${i}"></rect><rect class="bar${b.gross ? "" : " zero"}" x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 2)}"></rect>`;
+      })
+      .join("");
+    return `
+      <div class="chart" id="chart">
+        <span class="ymax">${money(max, cur)}</span>
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Revenue per ${range === "days" ? "day" : "month"}">
+          <line class="grid" x1="0" y1="${H - 0.5}" x2="${W}" y2="${H - 0.5}"></line>${bars}
+        </svg>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="axis"><span>${label(series[0][0])}</span><span>${label(series[series.length - 1][0])}</span></div>`;
+  }
+
+  function bindTooltip(series: [string, Bucket][], cur: string) {
+    const box = document.getElementById("chart");
+    if (!box) return;
+    const tip = $("tip");
+    box.querySelectorAll<SVGRectElement>(".hit").forEach((r) => {
+      const show = () => {
+        const [k, b] = series[Number(r.dataset.i)];
+        tip.textContent = `${label(k)} · ${money(b.gross, cur, 2)}${b.payments ? ` · ${b.payments} payment${b.payments > 1 ? "s" : ""}` : ""}`;
+        tip.hidden = false;
+        // Keep the tooltip inside the chart, even for the first and last bars
+        const rb = r.getBoundingClientRect(), cb = box.getBoundingClientRect();
+        const half = tip.offsetWidth / 2;
+        const x = Math.min(Math.max(rb.left - cb.left + rb.width / 2, half), cb.width - half);
+        tip.style.left = `${x}px`;
+      };
+      r.addEventListener("mouseenter", show);
+      r.addEventListener("touchstart", show, { passive: true });
+    });
+    box.addEventListener("mouseleave", () => (tip.hidden = true));
+  }
+
+  function render() {
+    const c = data.currencies[currency];
+    const l30 = data.last30Days[currency] ?? ({ gross: 0, net: 0, payments: 0 } as Bucket);
+    const p30 = data.previous30Days?.[currency] ?? ({ gross: 0 } as Bucket);
+    const series = (range === "days" ? Object.entries(c.days ?? {}) : Object.entries(c.months).slice(-24)) as [string, Bucket][];
+
+    $("rev-body").innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><div class="label">Revenue, last 30 days</div><div class="value">${money(l30.gross, currency)}</div>${delta(l30.gross, p30.gross)}</div>
+        <div class="kpi"><div class="label">All-time revenue</div><div class="value">${money(c.total.gross, currency)}</div><span class="small muted">${c.total.payments.toLocaleString("en-US")} payments</span></div>
+        <div class="kpi"><div class="label">All-time net</div><div class="value">${money(c.total.net, currency)}</div><span class="small muted">after refunds and fees</span></div>
+      </div>
+      <div class="chart-head">
+        <span class="small muted">Revenue per ${range === "days" ? "day, last 90 days" : "month"}</span>
+        <div class="range-tabs" role="tablist" aria-label="Range">
+          <button type="button" role="tab" data-range="days" aria-selected="${range === "days"}">Daily</button>
+          <button type="button" role="tab" data-range="months" aria-selected="${range === "months"}">Monthly</button>
+        </div>
+      </div>
+      ${chart(series, currency)}
+      ${data.complete ? "" : `<p class="small muted">Older transactions are not included yet.</p>`}`;
+
+    document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) =>
+      b.addEventListener("click", () => {
+        range = b.dataset.range as typeof range;
+        render();
+      }),
+    );
+    bindTooltip(series, currency);
+  }
+
+  function renderCurrencyTabs() {
+    const list = Object.entries(data.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross).map(([k]) => k);
+    currency = list[0];
+    const tabs = $("cur-tabs");
+    if (list.length < 2) return;
+    const paint = () => {
+      tabs.innerHTML = list
+        .map((k) => `<button type="button" role="tab" aria-selected="${k === currency}" data-cur="${esc(k)}">${esc(k.toUpperCase())}</button>`)
+        .join("");
+      tabs.querySelectorAll<HTMLButtonElement>("button").forEach((b) =>
+        b.addEventListener("click", () => {
+          currency = b.dataset.cur!;
+          paint();
+          render();
+        }),
+      );
+    };
+    paint();
+  }
+
   async function load() {
-    const box = document.getElementById("revenue")!;
     try {
       const res = await fetch("/api/revenue");
-      const data: Data = await res.json();
+      data = await res.json();
       showKey(data.verifyKey);
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
-
-      const currencies = Object.entries(data.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross);
-      if (currencies.length === 0) {
-        box.innerHTML = `<p class="muted">No payments yet.</p>`;
+      $("badge").hidden = false;
+      $("updated").textContent = `Updated ${timeAgo(data.generatedAt)}`;
+      if (Object.keys(data.currencies).length === 0) {
+        $("rev-body").innerHTML = `<p class="muted">No payments yet.</p>`;
         return;
       }
-      box.innerHTML = currencies
-        .map(([cur, c]) => {
-          const l30 = data.last30Days[cur];
-          const months = Object.entries(c.months).slice(-12);
-          const max = Math.max(1, ...months.map(([, m]) => m.gross));
-          const bars = months
-            .map(([m, b]) => `<span style="height:${Math.round((b.gross / max) * 100)}%" title="${m}: ${money(b.gross, cur)}"></span>`)
-            .join("");
-          return `
-            <h2>${esc(cur.toUpperCase())}</h2>
-            <div class="stats">
-              <div class="stat"><div class="label">Last 30 days, gross</div><div class="value">${money(l30?.gross ?? 0, cur)}</div></div>
-              <div class="stat"><div class="label">All time, gross</div><div class="value">${money(c.total.gross, cur)}</div></div>
-              <div class="stat"><div class="label">All time, net</div><div class="value">${money(c.total.net, cur)}</div></div>
-              <div class="stat"><div class="label">Payments</div><div class="value">${c.total.payments.toLocaleString("en-US")}</div></div>
-            </div>
-            ${months.length > 1 ? `<div class="small muted">Gross per month, last ${months.length} months</div>
-            <div class="bars" role="img" aria-label="Monthly gross revenue">${bars}</div>
-            <div class="small muted" style="display:flex;justify-content:space-between"><span>${months[0][0]}</span><span>${months[months.length - 1][0]}</span></div>` : ""}`;
-        })
-        .join("");
-      box.insertAdjacentHTML(
-        "beforeend",
-        `<p class="small muted" style="margin-top:12px">Read from Stripe at ${new Date(data.generatedAt).toLocaleString("en-NZ")}${
-          data.complete ? "" : " (oldest transactions not included yet)"
-        }.</p>`,
-      );
+      renderCurrencyTabs();
+      render();
     } catch (err) {
-      box.innerHTML = `<p class="muted">Couldn't load the numbers right now (${esc(String((err as Error).message))}). The verification commands below still work.</p>`;
+      const msg = String((err as Error).message);
+      $("rev-body").innerHTML = msg.includes("not set")
+        ? `<p class="muted">Revenue numbers will appear here once the verification key is connected.</p>`
+        : `<p class="muted">Couldn't load the numbers right now (${esc(msg)}). The verification commands below still work.</p>`;
     }
   }
 
   document.querySelectorAll<HTMLButtonElement>("button[data-copy]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const text = document.getElementById(btn.dataset.copy!)?.textContent ?? "";
+      const el = $(btn.dataset.copy!);
       const label = btn.textContent;
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(el.textContent ?? "");
         btn.textContent = "Copied";
       } catch {
-        const range = document.createRange();
-        range.selectNodeContents(document.getElementById(btn.dataset.copy!)!);
+        const r = document.createRange();
+        r.selectNodeContents(el);
         getSelection()?.removeAllRanges();
-        getSelection()?.addRange(range);
+        getSelection()?.addRange(r);
         btn.textContent = "Selected, press Ctrl+C";
       }
       setTimeout(() => (btn.textContent = label), 2000);
