@@ -47,6 +47,7 @@ const jsonLd =
         description: site.tagline,
         sameAs,
       };
+import ProgressBar from "../components/ProgressBar.astro";
 ---
 <!doctype html>
 <html lang="en">
@@ -69,6 +70,7 @@ const jsonLd =
     <meta name="twitter:card" content="summary" />
     {site.links.x && <meta name="twitter:creator" content={"@" + site.links.x.split("/").pop()} />}
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <ProgressBar />
   </head>
   <body>
     <div class="container">
