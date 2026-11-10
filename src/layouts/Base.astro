@@ -9,9 +9,11 @@ interface Props {
   type?: "website" | "article";
   published?: Date;
   noindex?: boolean;
+  // Wider page for layouts with a sidebar (the home page)
+  wide?: boolean;
 }
 
-const { title, description = site.description, type = "website", published, noindex = false } = Astro.props;
+const { title, description = site.description, type = "website", published, noindex = false, wide = false } = Astro.props;
 const fullTitle = title ? `${title} | ${site.name}` : `${site.name}: ${site.tagline}`;
 // Clean URL without ".html" or "/index", matching the sitemap and how Cloudflare Pages serves pages.
 const cleanPath = Astro.url.pathname.replace(/\.html$/, "").replace(/\/index$/, "").replace(/\/$/, "");
@@ -73,7 +75,7 @@ import ProgressBar from "../components/ProgressBar.astro";
     <ProgressBar />
   </head>
   <body>
-    <div class="container">
+    <div class:list={["container", { wide }]}>
       <header class="site-header">
         <a class="home" href="/">{site.name}</a>
         <nav aria-label="Main">

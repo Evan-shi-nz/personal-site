@@ -23,15 +23,16 @@ const nextStep = journey.findIndex((s) => !s.done);
 const monthLabel = (ym: string) =>
   ym ? new Date(`${ym}-01T00:00:00Z`).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
 ---
-<Base>
-  <section class="intro">
-    <img src={site.avatar} alt={`Portrait of ${site.name}`} width="96" height="96" />
-    <div>
-      <h1>{site.name}</h1>
-      <p>{site.tagline}</p>
-    </div>
-  </section>
-  <Social />
+<Base wide>
+<div class="home">
+  <aside class="profile" aria-label="About Evan">
+    <img class="avatar" src={site.avatar} alt={`Portrait of ${site.name}`} width="120" height="120" />
+    <h1>{site.name}</h1>
+    <p class="tagline">{site.tagline}</p>
+    <Social />
+  </aside>
+
+  <div class="home-main">
 
   <h2>Now</h2>
   <ul>
@@ -119,9 +120,24 @@ const monthLabel = (ym: string) =>
   </section>}
 
   <p class="small muted" style="margin-top:32px">Have a question or just want to say hi? <a href="/guestbook">Leave a message</a>.</p>
+  </div>
+</div>
 </Base>
 
 <style>
+  /* Profile on the left (sticky while scrolling), content on the right; stacked on smaller screens */
+  .home { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 56px; align-items: start; }
+  .profile { position: sticky; top: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .profile .avatar { width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+  .profile h1 { margin: 8px 0 0; font-size: 1.8rem; }
+  .profile .tagline { margin: 0 0 14px; color: var(--muted); font-size: 15.5px; line-height: 1.55; }
+  .home-main > :first-child { margin-top: 0; }
+  @media (max-width: 860px) {
+    .home { grid-template-columns: 1fr; gap: 24px; }
+    .profile { position: static; }
+    .profile .avatar { width: 96px; height: 96px; }
+  }
+
   .card { display: block; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
   .card-h { margin: 0 0 6px; font-size: 1.05rem; }
   .card p { margin: 4px 0; }

@@ -19,6 +19,9 @@ export const site = {
     linkedin: "",
     github: "https://github.com/Evan-shi-nz",
     email: "nz.evanshi@gmail.com",
+    // WhatsApp contact link from the app's QR code; the QR image is public/images/whatsapp-qr.png.
+    // Anyone who opens it can start a chat (and see the phone number). Set to "" to hide.
+    whatsapp: "https://wa.me/qr/BRPCDDFHIZABA1",
   },
   // X username without @, used to link notes back to their original posts
   xUsername: "EvanShi_nz",
