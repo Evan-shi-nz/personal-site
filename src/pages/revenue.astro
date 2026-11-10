@@ -4,24 +4,21 @@ import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
 // Projects, numbers and keys come from /api/revenue at runtime
-// (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEYS), so adding a project needs no rebuild.
+// (Cloudflare secret STRIPE_REVENUE_KEYS), so adding a project needs no rebuild.
 const apiUrl = new URL("/api/revenue", site.url).href;
 ---
-<Base title="Revenue" description="Evan Shi's product revenue, read live from Stripe, with a public key anyone can use to verify it.">
+<Base title="Revenue" description="Evan Shi's product revenue, read live from Stripe by open-source code.">
   <h1>Revenue</h1>
   <p class="muted">
     I run small online products. I don't name them here, but the money they make is real.
-    These numbers come straight from Stripe, and you can verify them yourself.
+    These numbers are read straight from Stripe by this site's <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>open-source code</a>.
   </p>
 
   <div class="proj-tabs" id="proj-tabs" role="tablist" aria-label="Project" hidden></div>
 
   <section class="rev-card" aria-live="polite">
     <div class="rev-head">
-      <span class="badge" id="badge" hidden>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 0l2 1.6 2.5-.2.8 2.4 2.1 1.4-.8 2.4.8 2.4-2.1 1.4-.8 2.4-2.5-.2L8 16l-2-1.6-2.5.2-.8-2.4L.6 10.8l.8-2.4-.8-2.4 2.1-1.4.8-2.4 2.5.2z" fill="currentColor"/><path d="M5 8.2l2 2 4-4.2" stroke="var(--bg)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Verified with Stripe
-      </span>
+      <span id="badge" hidden></span>
       <div class="cur-tabs" id="cur-tabs" role="tablist" aria-label="Currency"></div>
       <span class="small muted" id="updated"></span>
     </div>
@@ -31,30 +28,26 @@ const apiUrl = new URL("/api/revenue", site.url).href;
     </div>
   </section>
 
-  <h2 id="verify">Verify it yourself</h2>
+  <h2 id="verify">How these numbers are checked</h2>
   <p>
-    Each project has its own Stripe <strong>restricted key</strong> with only <code>Balance: Read</code> permission.
-    It can see that account's balance and the amount of each transaction. It cannot see customers, emails or products,
-    and it cannot change anything.
+    Each project is read from its own Stripe account with a <strong>restricted key</strong> that has only
+    <code>Balance: Read</code> permission. It can see amounts and dates of transactions. It cannot see customers,
+    emails or products, and it cannot change anything. The key stays on the server.
   </p>
-  <div id="keys">
-    <p class="muted">The verification keys have not been published yet.</p>
-  </div>
+  <ul id="checks" class="checks"></ul>
 
-  <h3>Option 1: the open-source verifier</h3>
-  <p>
-    <a href={site.repos.verifier} {...newTab}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
-    It first confirms that the key <em>cannot</em> read customer data, then adds up every transaction from Stripe and
-    compares the result with this page. Download it once:
-  </p>
-  <pre><code id="clone">git clone {site.repos.verifier}
+  <div id="verifier-help" hidden>
+    <h3>Check a public key yourself</h3>
+    <p>
+      <a href={site.repos.verifier} {...newTab}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
+      It confirms that the key <em>cannot</em> read customer data, adds up every transaction from Stripe and compares the
+      result with this page. Download it once, then run the command shown for the project:
+    </p>
+    <pre><code id="clone">git clone {site.repos.verifier}
 cd stripe-revenue-verifier</code></pre>
-  <button type="button" data-copy="clone">Copy commands</button>
-  <p>Then run the <code>node verify.mjs …</code> command shown under each key above.</p>
-
-  <h3>Option 2: ask Stripe directly</h3>
-  <pre><code id="curl">curl https://api.stripe.com/v1/balance -u <span data-first-key>rk_live_...</span>:</code></pre>
-  <button type="button" data-copy="curl">Copy command</button>
+    <button type="button" data-copy="clone">Copy commands</button>
+    <div id="keys"></div>
+  </div>
 
   <h3>How the numbers are calculated</h3>
   <ul>
@@ -79,7 +72,12 @@ cd stripe-revenue-verifier</code></pre>
   :global(.key-item .row) { display: flex; gap: 8px; flex-wrap: wrap; }
   .rev-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 14px; }
   .rev-head #updated { margin-left: auto; }
-  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); padding: 3px 10px 3px 8px; border-radius: 99px; }
+  :global(.badge) { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px 3px 8px; border-radius: 99px; text-decoration: none; }
+  :global(.badge.verified) { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  :global(a.badge.verified:hover) { background: color-mix(in srgb, var(--good) 20%, transparent); }
+  :global(.badge.plain) { color: var(--muted); background: var(--soft); }
+  :global(.checks) { padding-left: 20px; }
+  :global(.checks li) { margin-bottom: 6px; }
   /* Tabs are created by the script below, so their styles must be global */
   :global(.cur-tabs), :global(.range-tabs) { display: inline-flex; gap: 4px; }
   :global(.cur-tabs button), :global(.range-tabs button) { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 99px; }
@@ -107,7 +105,7 @@ cd stripe-revenue-verifier</code></pre>
 <script>
   type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
   type Currency = { total: Bucket; months: Record<string, Bucket>; days: Record<string, Bucket> };
-  type Project = { id: string; label: string };
+  type Project = { id: string; label: string; trustmrr?: string | null; verifiable?: boolean };
   type Data = {
     project?: Project;
     verifyKey?: string;
@@ -269,7 +267,7 @@ cd stripe-revenue-verifier</code></pre>
     const d = current();
     const body = $("rev-body");
     if (!d || d.error) {
-      $("badge").hidden = true;
+      $("badge").innerHTML = "";
       $("updated").textContent = "";
       $("cur-tabs").innerHTML = "";
       const msg = d?.error ?? "No data yet.";
@@ -278,7 +276,7 @@ cd stripe-revenue-verifier</code></pre>
         : `<p class="muted">Couldn't load the numbers for this project (${esc(msg)}).</p>`;
       return;
     }
-    $("badge").hidden = false;
+    renderBadge();
     $("updated").textContent = d.generatedAt ? `Updated ${timeAgo(d.generatedAt)}` : "";
     renderCurrencyTabs(d);
     if (!currency) {
@@ -307,9 +305,39 @@ cd stripe-revenue-verifier</code></pre>
     bindTooltip(series, currency);
   }
 
+  const CHECK = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 0l2 1.6 2.5-.2.8 2.4 2.1 1.4-.8 2.4.8 2.4-2.1 1.4-.8 2.4-2.5-.2L8 16l-2-1.6-2.5.2-.8-2.4L.6 10.8l.8-2.4-.8-2.4 2.1-1.4.8-2.4 2.5.2z" fill="currentColor"/><path d="M5 8.2l2 2 4-4.2" stroke="var(--bg)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  // "Verified on TrustMRR" only where a project really has a TrustMRR page; otherwise say what it is.
+  function renderBadge() {
+    const p = projects.find((x) => x.id === selected);
+    const badge = $("badge");
+    badge.hidden = false;
+    if (p?.trustmrr) {
+      badge.innerHTML = `<a class="badge verified" href="${esc(p.trustmrr)}" target="_blank" rel="noopener noreferrer">${CHECK} Verified on TrustMRR ↗</a>`;
+    } else if (p?.verifiable) {
+      badge.innerHTML = `<a class="badge verified" href="#verify">${CHECK} Public key, check it yourself</a>`;
+    } else {
+      badge.innerHTML = `<span class="badge plain">Read from Stripe</span>`;
+    }
+  }
+
+  function renderChecks() {
+    $("checks").innerHTML = projects
+      .map((p) => {
+        const how = p.trustmrr
+          ? `independently verified on <a href="${esc(p.trustmrr)}" target="_blank" rel="noopener noreferrer">TrustMRR ↗</a>`
+          : p.verifiable
+            ? `public key below, so you can <a href="#keys">check it yourself</a>`
+            : `read from Stripe by this site's open-source code`;
+        return `<li><strong>${esc(p.label)}</strong>: ${how}.</li>`;
+      })
+      .join("");
+  }
+
   function renderKeys() {
     const withKeys = projects.map((p) => ({ p, d: results.get(p.id) })).filter(({ d }) => d?.verifyKey?.startsWith("rk_"));
     if (withKeys.length === 0) return;
+    $("verifier-help").hidden = false;
     $("keys").innerHTML = withKeys
       .map(
         ({ p, d }) => `
@@ -321,7 +349,6 @@ cd stripe-revenue-verifier</code></pre>
         </div>`,
       )
       .join("");
-    document.querySelectorAll("[data-first-key]").forEach((el) => (el.textContent = withKeys[0].d!.verifyKey!));
   }
 
   // ---------- events (delegated, since most buttons are rendered by script) ----------
@@ -363,7 +390,7 @@ cd stripe-revenue-verifier</code></pre>
       projects = [];
     }
     if (projects.length === 0) {
-      results.set("none", { error: "PUBLIC_STRIPE_VERIFY_KEYS is not set" } as Data);
+      results.set("none", { error: "STRIPE_REVENUE_KEYS is not set" } as Data);
       selected = "none";
       render();
       return;
@@ -382,6 +409,7 @@ cd stripe-revenue-verifier</code></pre>
     );
     if (selected === "all" && okResults().length === 0) selected = projects[0].id; // show the error of the first project
     render();
+    renderChecks();
     renderKeys();
   }
 

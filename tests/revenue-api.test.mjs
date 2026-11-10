@@ -18,22 +18,38 @@ globalThis.fetch = async (url, init) => {
 const call = (env, path) =>
   onRequestGet({ request: new Request(`https://site.test${path}`), env, waitUntil: () => {} }).then(async (r) => ({ status: r.status, body: await r.json() }));
 
-test("parses named and unnamed keys, one per line or comma separated", () => {
-  const env = { PUBLIC_STRIPE_VERIFY_KEYS: `Tools=${SAFE_A}\n ${SAFE_B} ,` };
+test("parses one project per line with optional TrustMRR link and public flag", () => {
+  const env = { STRIPE_REVENUE_KEYS: `Tools=${SAFE_A} | trustmrr=https://trustmrr.com/startup/tools\n ${SAFE_B} | public\n` };
   assert.deepEqual(parseProjects(env), [
-    { id: "1", label: "Tools", key: SAFE_A },
-    { id: "2", label: "Project 2", key: SAFE_B },
+    { id: "1", label: "Tools", key: SAFE_A, trustmrr: "https://trustmrr.com/startup/tools", public: false },
+    { id: "2", label: "Project 2", key: SAFE_B, trustmrr: null, public: true },
   ]);
-  assert.deepEqual(parseProjects({ PUBLIC_STRIPE_VERIFY_KEY: SAFE_A }).map((p) => p.id), ["1"]); // old variable still works
+  // older variable still works, and its keys were meant to be public
+  assert.deepEqual(parseProjects({ PUBLIC_STRIPE_VERIFY_KEY: SAFE_A }).map((p) => [p.id, p.public]), [["1", true]]);
+});
+
+test("keeps keys on the server unless the project is public", async () => {
+  const env = { STRIPE_REVENUE_KEYS: `A=${SAFE_A}\nB=${SAFE_B} | public` };
+  const a = await call(env, "/api/revenue?project=1");
+  const b = await call(env, "/api/revenue?project=2");
+  assert.equal(a.body.currencies.usd.total.gross, 1000);
+  assert.ok(!JSON.stringify(a.body).includes(SAFE_A));
+  assert.equal(a.body.project.verifiable, false);
+  assert.equal(b.body.verifyKey, SAFE_B);
+  const list = await call(env, "/api/revenue/projects");
+  assert.ok(!JSON.stringify(list.body).includes("rk_live"));
 });
 
 test("lists projects without keys", async () => {
-  const { body } = await call({ PUBLIC_STRIPE_VERIFY_KEYS: `A=${SAFE_A},B=${SAFE_B}` }, "/api/revenue/projects");
-  assert.deepEqual(body, { projects: [{ id: "1", label: "A" }, { id: "2", label: "B" }] });
+  const { body } = await call({ STRIPE_REVENUE_KEYS: `A=${SAFE_A}\nB=${SAFE_B} | trustmrr=https://trustmrr.com/startup/b` }, "/api/revenue/projects");
+  assert.deepEqual(body, { projects: [
+    { id: "1", label: "A", trustmrr: null, verifiable: false },
+    { id: "2", label: "B", trustmrr: "https://trustmrr.com/startup/b", verifiable: false },
+  ] });
 });
 
 test("returns each project's own numbers and key", async () => {
-  const env = { PUBLIC_STRIPE_VERIFY_KEYS: `A=${SAFE_A},B=${SAFE_B}` };
+  const env = { PUBLIC_STRIPE_VERIFY_KEYS: `A=${SAFE_A}\nB=${SAFE_B}` }; // older variable: keys are public
   const a = await call(env, "/api/revenue?project=1");
   const b = await call(env, "/api/revenue?project=2");
   assert.equal(a.body.currencies.usd.total.gross, 1000);
@@ -45,7 +61,7 @@ test("returns each project's own numbers and key", async () => {
 });
 
 test("refuses a key that can read customer data and does not reveal it", async () => {
-  const { status, body } = await call({ PUBLIC_STRIPE_VERIFY_KEYS: `X=${LEAKY}` }, "/api/revenue?project=1");
+  const { status, body } = await call({ STRIPE_REVENUE_KEYS: `X=${LEAKY} | public` }, "/api/revenue?project=1");
   assert.equal(status, 500);
   assert.match(body.error, /customer data/);
   assert.ok(!JSON.stringify(body).includes(LEAKY));

@@ -3,7 +3,7 @@
 Evan Shi's personal website: blog, notes synced from X, guestbook, resume, and publicly verifiable revenue.
 
 - **Static site** built with [Astro](https://astro.build), hosted entirely on **Cloudflare**: Workers static assets, a small Worker API, D1 for the guestbook and a Cron Trigger that syncs posts from X. No server of my own.
-- **Revenue is verifiable.** `/revenue` publishes a Stripe key that can only read my balance. Anyone can check the numbers with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code as this site.
+- **Revenue from Stripe.** `/revenue` reads each project's Stripe account with a Balance-only key kept on the server, and shows totals only. Projects can link to TrustMRR for third-party verification, or publish their key so anyone can check it with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code.
 - **Notes from X** get readable URLs made from their words (`/notes/ielts-day-1-writing-task-2`) and link back to the original post.
 - **Editable in the browser** at `/admin` ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)). Every save is a Git commit.
 
@@ -61,7 +61,7 @@ personal-site/
 | `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
 | `/guestbook` | 留言板 |
 | `/resume` | 英文简历，按钮可另存为 PDF |
-| `/revenue` | 收入仪表盘：可切换“全部项目 / 单个项目”，近 30 天、环比、累计、按天/按月图表、每个项目的公开验证 Key |
+| `/revenue` | 收入仪表盘：可切换“全部项目 / 单个项目”，近 30 天、环比、累计、按天/按月图表、每个项目的验证方式（TrustMRR 链接或公开 Key） |
 | `/admin` | 写作后台（不会被搜索引擎收录） |
 | `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 
@@ -130,19 +130,19 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
 
    | 类型 | 名称 | 值 |
    |---|---|---|
-   | 文本（Text） | `PUBLIC_STRIPE_VERIFY_KEYS` | 每行一个项目，格式 `显示名称=Key` |
-
-   例如：
+   | **密钥（Secret）** | `STRIPE_REVENUE_KEYS` | 每行一个项目，格式见下 |
 
    ```
-   Project 1=rk_live_第一个账号的Key
+   Project 1=rk_live_第一个账号的Key | trustmrr=https://trustmrr.com/startup/你的项目
    Project 2=rk_live_第二个账号的Key
    ```
 
-   - 显示名称可以随便起，不想公开项目名就写 `Project 1`；省略名称（只写 Key）会自动叫 `Project 1`、`Project 2`……
-   - 以后新增网站，往下加一行即可，收入页会自动多一个切换标签，不需要改代码或重新部署。
-   - 每个 Key 都必须**只开 Balance → Read**。能读取客户数据的 Key 会被网站拒绝，不会显示出来。
-   - 项目的顺序就是网址里的编号：第一行是 `/api/revenue?project=1`，第二行是 `?project=2`。调整顺序会改变编号。
+   - **Key 默认不公开**：只在服务器上用来计算，页面和接口只返回汇总数字（近 30 天、累计、每天/每月收入），不会返回 Key、提现记录、余额或交易说明。
+   - `| trustmrr=网址`（可选）：这个项目旁边会显示 "Verified on TrustMRR ↗" 第三方验证链接。没有的话显示 "Read from Stripe"。
+   - `| public`（可选）：在页面上公开这个项目的 Key 和验证命令，让访客自己核对。注意：公开的 Key 能看到全部交易记录，包括**提现记录和你手写的说明**。
+   - 显示名称可以随便起；以后新增网站，往下加一行即可，不需要改代码或重新部署。
+   - 每个 Key 都必须**只开 Balance → Read**。能读取客户数据的 Key 会被网站拒绝。
+   - 项目的顺序就是网址里的编号（第一行是 `?project=1`），调整顺序会改变编号。
    - 换了新 Key 后，这个项目的交易记录会重新读取一遍（记录按 Key 区分，数据库里不保存 Key 本身）。
 
    保存后立即生效，不需要重新构建。`wrangler.jsonc` 里设置了 `keep_vars: true`，以后自动部署不会把它清掉。
@@ -278,7 +278,7 @@ npm test
 **交易很多的账号（几千笔以上）**
 Cloudflare 免费版每次请求最多调用 50 次外部接口，一次最多读 4,500 笔交易。为此网站把每个项目的交易（只存金额、手续费、币种、类型、时间）保存在 D1 数据库里：第一次读不完的部分，由下一次访问或每 3 小时的定时任务接着读，补齐后每次只读新增的交易。补齐前页面会提示 "Older transactions are not included yet"。
 
-**改了 `PUBLIC_STRIPE_VERIFY_KEYS` 后数字没变**
+**改了 `STRIPE_REVENUE_KEYS` 后数字没变**
 收入数据在 Cloudflare 边缘缓存 6 小时，等缓存过期即可。页面上显示的 Key 是实时从接口读取的，改完马上生效。
 
 **国内打不开网站**
