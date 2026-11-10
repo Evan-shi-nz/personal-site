@@ -21,6 +21,8 @@ import { syncTransactions } from "../../worker/revenue-store.js";
 
 // Read new transactions from Stripe at most every 12 hours.
 const CACHE_SECONDS = 12 * 60 * 60;
+// Bump when the response shape changes, so cached responses from older code are not served.
+const CACHE_VERSION = 2;
 // Only while a large history is first being copied into D1: let the next visit continue soon.
 const PARTIAL_CACHE_SECONDS = 60;
 // Cloudflare's free plan allows 50 sub-requests per request: 2 permission checks + up to 45 pages.
@@ -65,7 +67,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
   if (!project.key.startsWith("rk_")) return json({ ...meta, error: "Only a restricted key (rk_) may be used here" }, 500);
 
   const cache = caches.default;
-  const cacheKey = new Request(`${url.origin}/api/revenue?project=${project.id}&k=${project.key.slice(-8)}`);
+  const cacheKey = new Request(`${url.origin}/api/revenue?project=${project.id}&k=${project.key.slice(-8)}&v=${CACHE_VERSION}`);
   const hit = await cache.match(cacheKey);
   if (hit) return hit;
 
