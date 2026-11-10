@@ -4,7 +4,7 @@ import { site } from "../site.config";
 import { getPosts } from "../lib/content";
 
 export async function GET(context: APIContext) {
-  const posts = await getPosts();
+  const posts = (await getPosts()).filter((p) => !p.data.placeholder);
   return rss({
     title: `${site.name}'s blog`,
     description: site.description,

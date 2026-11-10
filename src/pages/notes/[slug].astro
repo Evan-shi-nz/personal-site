@@ -13,7 +13,7 @@ export async function getStaticPaths() {
 }
 const { note, newer, older } = Astro.props;
 ---
-<Base title={noteTitle(note)} description={truncate(noteText(note), 160)} type="article" published={note.data.date}>
+<Base title={noteTitle(note)} description={truncate(noteText(note), 160)} type="article" published={note.data.date} noindex={note.data.placeholder}>
   <NoteCard note={note} standalone />
   <nav class="pager" aria-label="More notes">
     {newer ? <a href={`/notes/${newer.id}`} rel="prev">← Newer</a> : <span />}

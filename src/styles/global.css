@@ -76,7 +76,7 @@ th { color: var(--muted); font-weight: 500; }
 /* Lists of posts and notes */
 .post-list { list-style: none; padding: 0; margin: 0; }
 .post-list li { display: flex; gap: 16px; padding: 6px 0; align-items: baseline; }
-.post-list time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; flex: none; width: 92px; }
+.post-list time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; flex: none; width: 100px; white-space: nowrap; }
 .post-list a { text-decoration: none; }
 .post-list a:hover { text-decoration: underline; }
 .note { padding: 16px 0; border-bottom: 1px solid var(--line); }
@@ -106,6 +106,9 @@ button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 28px 0 8px; font-size: 15px; }
 .pager a { text-decoration: none; }
+.post-nav { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 40px; align-items: stretch; }
+.post-nav a { display: flex; flex-direction: column; gap: 2px; max-width: 48%; }
+.post-nav a.older { text-align: right; margin-left: auto; }
 .pager a:hover { text-decoration: underline; }
 
 /* Footer */

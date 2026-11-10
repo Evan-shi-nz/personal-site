@@ -9,5 +9,9 @@ export default defineConfig({
   trailingSlash: "never",
   build: { format: "file" },
   // Links to other websites (X, GitHub, links inside posts and notes) open in a new tab
-  integrations: [sitemap(), externalLinks({ site: site.url })],
+  integrations: [
+    // Sample posts and notes (file names starting with "sample-") stay out of the sitemap
+    sitemap({ filter: (page) => !/\/sample-/.test(page) }),
+    externalLinks({ site: site.url }),
+  ],
 });

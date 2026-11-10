@@ -14,6 +14,8 @@ const blog = defineCollection({
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
+    // Sample content for previewing the layout: not indexed, not in RSS or the sitemap
+    placeholder: z.boolean().default(false),
   }),
 });
 
@@ -27,6 +29,7 @@ const notes = defineCollection({
     source: z.enum(["x", "site"]).default("site"),
     tweetId: z.string().optional(),
     url: z.string().url().optional(),
+    placeholder: z.boolean().default(false),
   }),
 });
 

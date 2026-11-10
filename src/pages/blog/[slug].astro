@@ -5,14 +5,14 @@ import { getPosts, formatDate, isoDate } from "../../lib/content";
 
 export async function getStaticPaths() {
   const posts = await getPosts();
-  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+  return posts.map((post, i) => ({ params: { slug: post.id }, props: { post, newer: posts[i - 1], older: posts[i + 1] } }));
 }
 
-const { post } = Astro.props;
+const { post, newer, older } = Astro.props;
 const { Content } = await render(post);
 const { title, description, date, updated, tags } = post.data;
 ---
-<Base title={title} description={description} type="article" published={date}>
+<Base title={title} description={description} type="article" published={date} noindex={post.data.placeholder}>
   <article>
     <header class="post-header">
       <h1>{title}</h1>
@@ -26,6 +26,9 @@ const { title, description, date, updated, tags } = post.data;
       <Content />
     </div>
   </article>
-  <hr />
-  <p><a href="/blog">← All posts</a></p>
+  <nav class="pager post-nav" aria-label="More posts">
+    {newer ? <a href={`/blog/${newer.id}`} rel="prev"><span class="muted small">← Newer</span><span>{newer.data.title}</span></a> : <span />}
+    {older ? <a href={`/blog/${older.id}`} rel="next" class="older"><span class="muted small">Older →</span><span>{older.data.title}</span></a> : <span />}
+  </nav>
+  <p class="small"><a href="/blog">All posts</a></p>
 </Base>
