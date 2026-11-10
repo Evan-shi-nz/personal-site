@@ -11,6 +11,19 @@ test("www sends visitors to the bare domain, keeping the path and query", async 
   assert.equal(res.headers.get("Location"), "https://evanshi.nz/blog/some-post?x=1");
 });
 
+test("plain http goes to https, also for www", async () => {
+  for (const [from, to] of [["http://evanshi.nz/cv", "https://evanshi.nz/cv"], ["http://www.evanshi.nz/", "https://evanshi.nz/"]]) {
+    const res = await worker.fetch(new Request(from), env, ctx);
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.get("Location"), to);
+  }
+});
+
+test("local development is not redirected", async () => {
+  const res = await worker.fetch(new Request("http://127.0.0.1:8787/blog"), env, ctx);
+  assert.equal(res.status, 200);
+});
+
 test("the bare domain and workers.dev serve pages normally", async () => {
   for (const u of ["https://evanshi.nz/blog", "https://personal-site.ssgooglx.workers.dev/cv"]) {
     const res = await worker.fetch(new Request(u), env, ctx);

@@ -10,9 +10,11 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    // One address for everyone: www.evanshi.nz -> evanshi.nz
-    if (url.hostname.startsWith("www.")) {
-      url.hostname = url.hostname.slice(4);
+    // One address for everyone: https, and www.evanshi.nz -> evanshi.nz
+    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    if (url.hostname.startsWith("www.") || (url.protocol === "http:" && !local)) {
+      url.hostname = url.hostname.replace(/^www\./, "");
+      url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
     }
 
