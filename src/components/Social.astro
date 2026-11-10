@@ -14,14 +14,15 @@ const handle = (url: string) => url.replace(/\/+$/, "").split("/").pop();
 const items = [
   x && { key: "x", label: "X", detail: `@${handle(x)}`, href: x },
   linkedin && { key: "linkedin", label: "LinkedIn", detail: handle(linkedin), href: linkedin },
-  github && { key: "github", label: "GitHub", detail: handle(github), href: github },
+  github && { key: "github", label: "GitHub", detail: `@${handle(github)}`, href: github },
 ].filter(Boolean) as { key: keyof typeof icons; label: string; detail: string; href: string }[];
+const svg = (key: keyof typeof icons) => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg>`;
 ---
 <ul class="contacts">
   {items.map((it) => (
     <li>
       <a class="row" href={it.href} target="_blank" rel="me noopener noreferrer">
-        <span class="tile" set:html={`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[it.key]}</svg>`} />
+        <span class="tile" set:html={svg(it.key)} />
         <span class="text"><span class="label">{it.label}</span><span class="detail">{it.detail}</span></span>
         <span class="go" aria-hidden="true">↗</span>
       </a>
@@ -29,39 +30,84 @@ const items = [
   ))}
   {whatsapp && (
     <li>
-      <details class="wa">
-        <summary class="row">
-          <span class="tile" set:html={`<svg viewBox="0 0 24 24" aria-hidden="true">${icons.whatsapp}</svg>`} />
-          <span class="text"><span class="label">WhatsApp</span><span class="detail">Scan the QR code</span></span>
-          <span class="go chev" aria-hidden="true">▾</span>
-        </summary>
-        <div class="qr">
-          <img src="/images/whatsapp-qr.png" width="200" height="200" alt="WhatsApp QR code for Evan Shi" loading="lazy" />
-          <a href={whatsapp} target="_blank" rel="noopener noreferrer">Open in WhatsApp ↗</a>
-        </div>
-      </details>
+      <button type="button" class="row" data-open-dialog="wa-dialog" aria-haspopup="dialog">
+        <span class="tile" set:html={svg("whatsapp")} />
+        <span class="text"><span class="label">WhatsApp</span></span>
+      </button>
     </li>
   )}
   {email && (
     <li>
-      <a class="row" href={`mailto:${email}`} title={email}>
-        <span class="tile" set:html={`<svg viewBox="0 0 24 24" aria-hidden="true">${icons.email}</svg>`} />
-        <span class="text"><span class="label">Email</span><span class="detail">Say hello</span></span>
-        <span class="go" aria-hidden="true">→</span>
-      </a>
+      <button type="button" class="row" data-copy-email={email} title={email}>
+        <span class="tile" set:html={svg("email")} />
+        <span class="text"><span class="label">Email</span></span>
+      </button>
     </li>
   )}
 </ul>
 
+{whatsapp && (
+  <dialog id="wa-dialog" class="modal" aria-labelledby="wa-title">
+    <button type="button" class="close" data-close-dialog aria-label="Close">×</button>
+    <h2 id="wa-title">WhatsApp</h2>
+    <p class="muted small">Scan with your phone's camera or WhatsApp.</p>
+    <img src="/images/whatsapp-qr.png" width="240" height="240" alt="WhatsApp QR code for Evan Shi" loading="lazy" />
+    <a class="open" href={whatsapp} target="_blank" rel="noopener noreferrer">Open in WhatsApp ↗</a>
+  </dialog>
+)}
+
+<div class="toast" id="copy-toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+  // WhatsApp: QR code in a dialog in the middle of the screen
+  document.querySelectorAll<HTMLButtonElement>("[data-open-dialog]").forEach((btn) =>
+    btn.addEventListener("click", () => (document.getElementById(btn.dataset.openDialog!) as HTMLDialogElement).showModal()),
+  );
+  document.querySelectorAll<HTMLDialogElement>("dialog.modal").forEach((d) => {
+    d.querySelector("[data-close-dialog]")?.addEventListener("click", () => d.close());
+    // Clicking the dimmed area outside the box closes it
+    d.addEventListener("click", (e) => {
+      const r = d.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (!inside) d.close();
+    });
+  });
+
+  // Email: copy the address and confirm in the middle of the screen
+  const toast = document.getElementById("copy-toast")!;
+  let hideTimer: number | undefined;
+  function showToast(html: string) {
+    toast.innerHTML = html;
+    toast.hidden = false;
+    toast.classList.remove("show");
+    void toast.offsetWidth; // restart the animation
+    toast.classList.add("show");
+    clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => (toast.hidden = true), 2200);
+  }
+  document.querySelectorAll<HTMLButtonElement>("[data-copy-email]").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const email = btn.dataset.copyEmail!;
+      try {
+        await navigator.clipboard.writeText(email);
+        showToast(`<strong>Email copied</strong><span>${email}</span>`);
+      } catch {
+        // Clipboard not available (old browser, insecure page): show the address to copy by hand
+        showToast(`<strong>Copy this email</strong><span>${email}</span>`);
+      }
+    }),
+  );
+</script>
+
 <style>
   .contacts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
   .row {
-    display: flex; align-items: center; gap: 14px; padding: 8px 10px; margin: 0 -10px;
-    border-radius: 12px; text-decoration: none; color: var(--fg); cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 14px; padding: 8px 10px; margin: 0 -10px; width: calc(100% + 20px);
+    border: 0; background: transparent; font: inherit; text-align: left;
+    border-radius: 12px; text-decoration: none; color: var(--fg); cursor: pointer;
     transition: background 0.15s;
   }
-  .row::-webkit-details-marker { display: none; }
-  .row:hover, .wa[open] .row { background: var(--soft); }
+  .row:hover { background: var(--soft); }
   .row:focus-visible { outline: 2px solid var(--fg); outline-offset: 0; }
   .tile {
     width: 36px; height: 36px; flex: none; display: grid; place-items: center;
@@ -72,15 +118,45 @@ const items = [
   .label { font-size: 15px; font-weight: 600; }
   .detail { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .go { color: var(--muted); font-size: 14px; opacity: 0; transition: opacity 0.15s; }
-  .row:hover .go, .wa[open] .go { opacity: 1; }
-  .wa[open] .chev { transform: rotate(180deg); }
-  .qr { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0 6px; font-size: 14px; }
-  .qr img { width: 200px; height: 200px; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
-  .qr img { max-width: 100%; height: auto; }
-  /* Narrow screens: two columns to save space; an opened WhatsApp item takes the full row */
+  .row:hover .go { opacity: 1; }
+
+  /* Centered dialog for the WhatsApp QR code */
+  .modal {
+    border: 1px solid var(--line); border-radius: 18px; padding: 28px 28px 22px; width: min(340px, calc(100vw - 32px));
+    background: var(--bg); color: var(--fg); text-align: center; box-shadow: 0 20px 60px rgb(0 0 0 / 0.25);
+  }
+  .modal::backdrop { background: rgb(0 0 0 / 0.45); backdrop-filter: blur(2px); }
+  .modal[open] { animation: pop 0.18s ease-out; }
+  .modal h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  .modal p { margin: 0 0 16px; }
+  .modal img { display: block; width: 240px; max-width: 100%; height: auto; margin: 0 auto 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
+  .modal .open { font-size: 14px; font-weight: 600; }
+  .close {
+    position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  .close:hover { background: var(--soft); color: var(--fg); }
+
+  /* "Email copied" message in the middle of the screen */
+  .toast {
+    position: fixed; z-index: 1001; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 22px;
+    border-radius: 14px; background: var(--fg); color: var(--bg); font-size: 14px; text-align: center;
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); pointer-events: none; max-width: calc(100vw - 32px);
+  }
+  .toast :global(strong) { font-size: 15px; }
+  .toast :global(span) { opacity: 0.75; overflow-wrap: anywhere; }
+  .toast.show { animation: toast 2.2s ease forwards; }
+  @keyframes pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  @keyframes toast {
+    0% { opacity: 0; transform: translate(-50%, -46%); }
+    10%, 80% { opacity: 1; transform: translate(-50%, -50%); }
+    100% { opacity: 0; transform: translate(-50%, -50%); }
+  }
+
+  /* Narrow screens: two columns to save space */
   @media (max-width: 860px) {
     .contacts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-    .contacts li:has(.wa[open]) { grid-column: 1 / -1; }
   }
-  @media (prefers-reduced-motion: reduce) { .row, .go { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .row, .go { transition: none; } .modal[open], .toast.show { animation: none; } }
 </style>

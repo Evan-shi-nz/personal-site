@@ -25,6 +25,8 @@
 }
 
 * { box-sizing: border-box; }
+/* Elements marked hidden stay hidden, whatever display their own styles set */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
