@@ -11,9 +11,17 @@
     // /blog serves blog.html; unknown paths get dist/404.html with status 404
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    // Only API requests run the Worker; everything else is served straight from the static files
-    "run_worker_first": ["/api/*"]
+    // The Worker runs first for every request: it answers /api/*, sends www to the bare
+    // domain, and passes everything else to the static files.
+    "run_worker_first": true
   },
+  // Custom domains: wrangler creates the DNS records and certificates on deploy.
+  "routes": [
+    { "pattern": "evanshi.nz", "custom_domain": true },
+    { "pattern": "www.evanshi.nz", "custom_domain": true }
+  ],
+  // Keep the workers.dev address working too
+  "workers_dev": true,
   // Guestbook storage. No database_id: wrangler creates the database on the first deploy.
   "d1_databases": [{ "binding": "DB", "database_name": "personal-site-guestbook" }],
   // Cron Triggers (UTC), see scheduled() in worker/index.js:

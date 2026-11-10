@@ -127,7 +127,7 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
    | 预览命令 | 保持默认 |
 
 3. 点 **部署**，等 1–2 分钟。成功后会得到一个 `personal-site.<你的子域>.workers.dev` 地址。
-4. 绑定域名：进入这个 Worker → **设置（Settings）→ 域和路由（Domains & Routes）→ 添加 → 自定义域（Custom domain）**，填你的域名（例如 `www.yourname.com`）。域名在同一个 Cloudflare 账号里时，DNS 记录和 HTTPS 证书会自动创建。然后把 `src/site.config.ts` 的 `url` 和 `public/robots.txt` 里的地址改成这个域名。
+4. 域名：`evanshi.nz` 和 `www.evanshi.nz` 已写在 `wrangler.jsonc` 的 `routes` 里，部署时自动绑定（自动创建 DNS 记录和 HTTPS 证书）；`www` 会 301 跳转到 `evanshi.nz`。换域名时同时修改 `routes`、`src/site.config.ts` 的 `url` 和 `public/robots.txt`。
 5. 添加 Stripe Key（支持多个项目，每个 Stripe 账号一个 Key）：Worker → **设置 → 变量和机密（Variables and Secrets）→ 添加**：
 
    | 类型 | 名称 | 值 |

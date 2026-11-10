@@ -1,8 +1,8 @@
 // Everything personal lives here and in src/data/resume.json.
 
 export const site = {
-  // TODO: replace with your own domain later (used for SEO, sitemap and RSS)
-  url: "https://personal-site.ssgooglx.workers.dev",
+  // Used for SEO, the sitemap and RSS. The Worker also answers on personal-site.ssgooglx.workers.dev.
+  url: "https://evanshi.nz",
   name: "Evan Shi",
   // One line under your name on the home page
   tagline: "Software engineer and indie maker. Preparing for IELTS, then a master's degree and a career in New Zealand.",

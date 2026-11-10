@@ -7,7 +7,14 @@ import { syncX } from "./x-sync.js";
 
 export default {
   async fetch(request, env, ctx) {
-    const { pathname } = new URL(request.url);
+    const url = new URL(request.url);
+    const { pathname } = url;
+
+    // One address for everyone: www.evanshi.nz -> evanshi.nz
+    if (url.hostname.startsWith("www.")) {
+      url.hostname = url.hostname.slice(4);
+      return Response.redirect(url.toString(), 301);
+    }
 
     if (pathname === "/api/revenue" || pathname === "/api/revenue/projects") {
       if (request.method !== "GET" && request.method !== "HEAD") {
