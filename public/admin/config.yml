@@ -116,6 +116,10 @@ collections:
               - { name: school, label: School, widget: string }
               - { name: start, label: Start, widget: string }
               - { name: end, label: End, widget: string }
+          - name: achievements
+            label: Certifications & awards
+            widget: list
+            required: false
           - name: languages
             label: Languages
             widget: list

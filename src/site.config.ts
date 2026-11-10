@@ -5,10 +5,10 @@ export const site = {
   url: "https://personal-site.ssgooglx.workers.dev",
   name: "Evan Shi",
   // One line under your name on the home page
-  tagline: "Software developer and indie maker, on my way from China to New Zealand.",
+  tagline: "Software engineer and indie maker. Preparing for IELTS, then a master's degree and a career in New Zealand.",
   // Used in <meta name="description"> and search results
   description:
-    "Evan Shi: indie maker moving from China to New Zealand. IELTS preparation, building online products, verified revenue and resume.",
+    "Evan Shi: software engineer and indie maker on the way from China to New Zealand. IELTS preparation, small AI products, verified revenue and CV.",
   locale: "en_NZ",
   avatar: "/images/avatar.webp",
   // Square image for link previews on X, LinkedIn, etc.
@@ -30,8 +30,8 @@ export const site = {
   // Shown on the home page; keep it short and current
   now: [
     "Preparing for the IELTS Academic test",
-    "Running two small online products on my own",
-    "Planning my move to New Zealand",
+    "Choosing a master's programme in New Zealand",
+    "Running two small AI products on my own",
   ],
   // Revenue page: everything is shown in this currency. Rates are units per 1 USD;
   // the HKD rate is the Hong Kong dollar peg. Add a rate if a project earns in another currency.

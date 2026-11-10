@@ -33,18 +33,6 @@ const monthLabel = (ym: string) =>
   </section>
   <Social />
 
-  <a class="card rev-card" href="/revenue" id="rev-mini" data-currency={site.revenue.currency} data-rates={JSON.stringify(site.revenue.rates)} hidden>
-    <div class="rev-row">
-      <div>
-        <div class="small muted">Revenue, last 30 days</div>
-        <div><strong class="rev-value" id="rev-mini-value"></strong> <span class="small" id="rev-mini-change"></span></div>
-      </div>
-      <span class="small ok">✓ Verified on TrustMRR</span>
-    </div>
-    <svg class="rev-bars" id="rev-mini-bars" viewBox="0 0 300 48" preserveAspectRatio="none" aria-hidden="true"></svg>
-    <span class="small muted">See all projects →</span>
-  </a>
-
   <h2>Now</h2>
   <ul>
     {site.now.map((item) => <li>{item}</li>)}
@@ -98,6 +86,22 @@ const monthLabel = (ym: string) =>
   <PostList posts={posts} />
   <p><a href="/blog">All posts →</a></p>
 
+  <section id="side" hidden>
+    <h2>Side projects</h2>
+    <p class="small muted">Small AI products I build and run on my own. Happy to chat with other makers.</p>
+  <a class="card rev-card" href="/revenue" id="rev-mini" data-currency={site.revenue.currency} data-rates={JSON.stringify(site.revenue.rates)} hidden>
+    <div class="rev-row">
+      <div>
+        <div class="small muted">Revenue, last 30 days</div>
+        <div><strong class="rev-value" id="rev-mini-value"></strong> <span class="small" id="rev-mini-change"></span></div>
+      </div>
+      <span class="small ok">✓ Verified on TrustMRR</span>
+    </div>
+    <svg class="rev-bars" id="rev-mini-bars" viewBox="0 0 300 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <span class="small muted">See all projects →</span>
+  </a>
+  </section>
+
   {notes.length > 0 && (
     <>
       <h2>Latest notes</h2>
@@ -125,7 +129,7 @@ const monthLabel = (ym: string) =>
   a.card { text-decoration: none; color: var(--fg); }
   a.card:hover { border-color: var(--fg); }
 
-  .rev-card { margin: 28px 0 8px; }
+  .rev-card { margin: 12px 0 8px; }
   .rev-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px 16px; flex-wrap: wrap; }
   .rev-value { font-size: 1.6rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   :global(#rev-mini-change .up) { color: var(--good); font-weight: 600; }
@@ -188,6 +192,7 @@ const monthLabel = (ym: string) =>
         })
         .join("");
       card.hidden = false;
+      document.getElementById("side")!.hidden = false;
     } catch {}
   })();
 

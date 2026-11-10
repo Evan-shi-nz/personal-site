@@ -1,92 +1,88 @@
 {
   "name": "Evan Shi",
-  "headline": "Full-stack Developer · Indie Maker",
-  "location": "China (relocating to New Zealand)",
+  "headline": "Senior Software Engineer · Java, Python, AI applications",
+  "location": "China (planning to study and work in New Zealand)",
   "email": "nz.evanshi@gmail.com",
   "phone": "",
   "links": [
-    {
-      "label": "Website",
-      "url": "https://personal-site.ssgooglx.workers.dev"
-    },
-    {
-      "label": "GitHub",
-      "url": "https://github.com/Evan-shi-nz"
-    },
-    {
-      "label": "X",
-      "url": "https://x.com/EvanShi_nz"
-    }
+    { "label": "Website", "url": "https://personal-site.ssgooglx.workers.dev" },
+    { "label": "GitHub", "url": "https://github.com/Evan-shi-nz" },
+    { "label": "X", "url": "https://x.com/EvanShi_nz" }
   ],
-  "summary": "TODO: Two or three sentences. What you build, how many years, the strongest proof (for example: built and run two paid web products on my own, with verified revenue).",
+  "summary": "Software engineer with 6+ years of experience building backend systems for banking, telecom and healthcare, including three years at State Street in an English-speaking, globally distributed team. Since 2025 I have been designing, building and running my own AI products end to end, from model pipelines to payments and deployment. I'm now preparing for IELTS and plan to study for a master's degree in New Zealand, then continue my career there as a software engineer.",
   "experience": [
     {
-      "role": "Independent Product Developer",
-      "company": "Self-employed",
+      "role": "Founder & Software Engineer",
+      "company": "Independent AI products",
       "location": "Remote",
-      "start": "2024",
+      "start": "Oct 2025",
       "end": "Present",
       "highlights": [
-        "Built, launched and run two subscription web products end to end: product, code, payments, marketing and support.",
-        "Revenue is processed by Stripe and publicly verifiable on my website.",
-        "TODO: add one measurable result (users, revenue, growth, uptime)."
+        "Built and run two consumer AI SaaS products on my own: product design, frontend, backend, payments, cloud deployment, growth and support.",
+        "Designed AI pipelines that combine speech recognition, large language models, OCR and image-editing models; compared models on quality, speed and cost, and improved prompts using real failure cases.",
+        "Reduced upload and processing costs by extracting the audio track in the browser and uploading only the audio.",
+        "Implemented Stripe subscriptions, credit packs and usage-based top-ups, and iterated on pricing until subscriptions made up about half of paying customers.",
+        "Grew organic traffic through SEO content, short-form video and launch platforms. Revenue is public on [this site](/revenue) and verified on TrustMRR."
       ]
     },
     {
-      "role": "TODO: Job title",
-      "company": "TODO: Company",
-      "location": "TODO: City, China",
-      "start": "TODO",
-      "end": "TODO",
+      "role": "Senior Developer",
+      "company": "State Street Technology (Zhejiang)",
+      "location": "China",
+      "start": "Jul 2022",
+      "end": "Sep 2025",
       "highlights": [
-        "TODO: Start each line with a verb and include a number where you can.",
-        "TODO: Second achievement."
+        "Lead developer on an institutional digital-asset trading platform built as Spring Cloud Alibaba (Nacos) microservices and deployed on AWS.",
+        "Designed and built the trading microservice that integrates with an external custody and trading partner: account and asset queries, order placement, and order and fill status synchronisation.",
+        "Kept orders and balances consistent despite asynchronous, high-latency on-chain settlement by using idempotent operations, retries and compensating state updates.",
+        "Worked directly with users to turn raw requirements into functional designs, and coordinated with business teams, QA and external vendors through integration and release.",
+        "Contributed to other internal systems, working in English with colleagues across regions."
+      ]
+    },
+    {
+      "role": "Senior Java Developer",
+      "company": "AsiaInfo Technologies",
+      "location": "China",
+      "start": "Dec 2020",
+      "end": "Jul 2022",
+      "highlights": [
+        "Owned the design and delivery of a billing audit system for a provincial branch of a major mobile operator with more than 10 million subscribers.",
+        "Re-architected the legacy system on Spring Boot, MySQL, Redis and Kafka, adding caching, horizontal scaling and Kafka-based alert delivery.",
+        "Rebuilt a data push service handling about 5 million messages a day; batching, thread pools and pipeline tuning raised throughput by 40% and resolved garbage-collection issues.",
+        "Took part in architecture design, technology selection and code reviews."
+      ]
+    },
+    {
+      "role": "Java Developer & Team Lead",
+      "company": "Wonders Information",
+      "location": "China",
+      "start": "Nov 2019",
+      "end": "Oct 2020",
+      "highlights": [
+        "Developed a pathology system used by six major hospitals, including integrations with hospital information and laboratory systems (HIS, LIS).",
+        "Extended an internal job-scheduling platform based on XXL-Job with adaptive load balancing, Redis priority queues and distributed locks, and ZooKeeper service registration.",
+        "Led junior developers and delivered each hospital's releases on schedule."
       ]
     }
   ],
   "skills": [
-    {
-      "group": "Languages",
-      "items": [
-        "TypeScript",
-        "JavaScript",
-        "TODO"
-      ]
-    },
-    {
-      "group": "Frameworks",
-      "items": [
-        "React",
-        "Next.js",
-        "Astro",
-        "TODO"
-      ]
-    },
-    {
-      "group": "Infrastructure",
-      "items": [
-        "Cloudflare",
-        "Stripe",
-        "TODO"
-      ]
-    }
+    { "group": "Languages", "items": ["Java", "Python", "SQL", "JavaScript"] },
+    { "group": "Backend", "items": ["Spring Boot", "Spring Cloud Alibaba (Nacos)", "MyBatis", "Microservices", "REST APIs", "System integration"] },
+    { "group": "Data & messaging", "items": ["MySQL", "Redis", "Kafka", "ZooKeeper"] },
+    { "group": "Cloud & DevOps", "items": ["AWS", "Alibaba Cloud", "Cloudflare", "Docker", "Jenkins", "Linux"] },
+    { "group": "AI applications", "items": ["LLM APIs", "Prompt and context engineering", "RAG", "Agents and tool calling", "Speech recognition and OCR pipelines", "Model evaluation (quality, speed, cost)"] },
+    { "group": "Payments & product", "items": ["Stripe subscriptions and billing", "Pricing experiments", "Product analytics"] }
   ],
   "education": [
-    {
-      "degree": "TODO: Bachelor of ...",
-      "school": "TODO: University",
-      "start": "TODO",
-      "end": "TODO"
-    }
+    { "degree": "Bachelor of Engineering, Communication Engineering", "school": "Jiangxi University of Technology", "start": "2015", "end": "2019" }
+  ],
+  "achievements": [
+    "Huawei Certified ICT Professional (HCIP)",
+    "Second prize, Lanqiao Cup national programming contest",
+    "Open-source Python project with 800+ stars on GitHub (2022)"
   ],
   "languages": [
-    {
-      "language": "Mandarin Chinese",
-      "level": "Native"
-    },
-    {
-      "language": "English",
-      "level": "Professional working proficiency (IELTS Academic in progress)"
-    }
+    { "language": "Mandarin Chinese", "level": "Native" },
+    { "language": "English", "level": "Professional working proficiency; three years in an English-speaking workplace. IELTS Academic in preparation." }
   ]
 }

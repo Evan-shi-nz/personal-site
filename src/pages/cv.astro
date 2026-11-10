@@ -3,6 +3,14 @@ import { newTab } from "../lib/links";
 import { site } from "../site.config";
 import Base from "../layouts/Base.astro";
 import resume from "../data/resume.json";
+
+// Allow [text](url) links inside summary and highlights; everything else is plain text.
+const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const withLinks = (t: string) =>
+  esc(t).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, text, url) =>
+    /^https?:\/\//.test(url) ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>` : `<a href="${url}">${text}</a>`,
+  );
+const achievements: string[] = (resume as { achievements?: string[] }).achievements ?? [];
 ---
 <Base title="CV" description={`${resume.name}: ${resume.headline}. ${resume.location}.`}>
   <article class="resume">
@@ -20,7 +28,7 @@ import resume from "../data/resume.json";
       <button type="button" class="no-print" id="print">Save as PDF</button>
     </header>
 
-    <p>{resume.summary}</p>
+    <p set:html={withLinks(resume.summary)} />
 
     <h2>Experience</h2>
     {resume.experience.map((job) => (
@@ -29,7 +37,7 @@ import resume from "../data/resume.json";
           <h3>{job.role} · {job.company}</h3>
           <span class="muted small">{job.start} – {job.end} · {job.location}</span>
         </div>
-        <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>
+        <ul>{job.highlights.map((h) => <li set:html={withLinks(h)} />)}</ul>
       </section>
     ))}
 
@@ -45,6 +53,13 @@ import resume from "../data/resume.json";
         <span class="muted small">{e.start} – {e.end}</span>
       </div>
     ))}
+
+    {achievements.length > 0 && (
+      <>
+        <h2>Certifications & awards</h2>
+        <ul>{achievements.map((a) => <li set:html={withLinks(a)} />)}</ul>
+      </>
+    )}
 
     <h2>Languages</h2>
     <ul>{resume.languages.map((l) => <li>{l.language}: {l.level}</li>)}</ul>
