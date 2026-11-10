@@ -1,4 +1,5 @@
 ---
+import { newTab } from "../lib/links";
 import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import { formatDate, isoDate } from "../lib/content";
@@ -19,6 +20,6 @@ const { Content } = await render(note);
     ) : (
       <a href={`/notes/${note.id}`}><time datetime={isoDate(note.data.date)}>{formatDate(note.data.date)}</time></a>
     )}
-    {note.data.url && <> · <a href={note.data.url} rel="noopener">View on X ↗</a></>}
+    {note.data.url && <> · <a href={note.data.url} {...newTab}>View on X ↗</a></>}
   </div>
 </article>

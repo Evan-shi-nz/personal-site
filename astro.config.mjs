@@ -1,12 +1,13 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import { site } from "./src/site.config.ts";
+import externalLinks from "./src/lib/external-links.mjs";
 
-// Static output only: Cloudflare Pages serves the files, and the one dynamic
-// endpoint (/api/revenue) lives in /functions as a Pages Function.
+// Static pages; the API routes and the X sync cron run in the Worker (worker/index.js).
 export default defineConfig({
   site: site.url,
   trailingSlash: "never",
   build: { format: "file" },
-  integrations: [sitemap()],
+  // Links to other websites (X, GitHub, links inside posts and notes) open in a new tab
+  integrations: [sitemap(), externalLinks({ site: site.url })],
 });

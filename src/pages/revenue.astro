@@ -1,4 +1,5 @@
 ---
+import { newTab } from "../lib/links";
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
@@ -42,7 +43,7 @@ const apiUrl = new URL("/api/revenue", site.url).href;
 
   <h3>Option 1: the open-source verifier</h3>
   <p>
-    <a href={site.repos.verifier}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
+    <a href={site.repos.verifier} {...newTab}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
     It first confirms that this key <em>cannot</em> read customer data, then adds up every transaction from Stripe and
     compares the result with this page.
   </p>
@@ -61,7 +62,7 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     <li><strong>Net</strong>: revenue minus refunds, disputes and Stripe fees.</li>
     <li><strong>Change</strong>: the last 30 days compared with the 30 days before.</li>
     <li>Payouts to my bank and transfers are not revenue and are left out.</li>
-    <li>Numbers refresh every 6 hours. This page and the verifier use <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`}>the same code</a>.</li>
+    <li>Numbers refresh every 6 hours. This page and the verifier use <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>the same code</a>.</li>
   </ul>
 </Base>
 

@@ -3,8 +3,8 @@ import { site } from "../site.config";
 const { x, linkedin, github, email } = site.links;
 ---
 <div class="social">
-  {x && <a href={x} rel="me">X / Twitter</a>}
-  {linkedin && <a href={linkedin} rel="me">LinkedIn</a>}
-  {github && <a href={github} rel="me">GitHub</a>}
+  {x && <a href={x} target="_blank" rel="me noopener noreferrer">X / Twitter</a>}
+  {linkedin && <a href={linkedin} target="_blank" rel="me noopener noreferrer">LinkedIn</a>}
+  {github && <a href={github} target="_blank" rel="me noopener noreferrer">GitHub</a>}
   {email && <a href={`mailto:${email}`}>{email}</a>}
 </div>

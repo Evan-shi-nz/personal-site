@@ -1,4 +1,5 @@
 ---
+import { newTab } from "../lib/links";
 import "../styles/global.css";
 import { site } from "../site.config";
 
@@ -85,7 +86,7 @@ const jsonLd =
       <footer class="site-footer">
         <span>© {new Date().getFullYear()} {site.name}</span>
         <span>
-          <a href="/rss.xml">RSS</a> · <a href={site.repos.site}>Source on GitHub</a>
+          <a href="/rss.xml">RSS</a> · <a href={site.repos.site} {...newTab}>Source on GitHub</a>
         </span>
       </footer>
     </div>

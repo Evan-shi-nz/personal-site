@@ -1,4 +1,6 @@
 ---
+import { newTab } from "../lib/links";
+import { site } from "../site.config";
 import Base from "../layouts/Base.astro";
 import resume from "../data/resume.json";
 ---
@@ -11,7 +13,7 @@ import resume from "../data/resume.json";
         <p class="small">
           {[resume.email, resume.phone].filter(Boolean).join(" · ")}
           {resume.links.map((l, i) => (
-            <>{(i > 0 || resume.email || resume.phone) && " · "}<a href={l.url}>{l.url.replace(/^https?:\/\/(www\.)?/, "")}</a></>
+            <>{(i > 0 || resume.email || resume.phone) && " · "}<a href={l.url} {...(new URL(l.url).host === new URL(site.url).host ? {} : newTab)}>{l.url.replace(/^https?:\/\/(www\.)?/, "")}</a></>
           ))}
         </p>
       </div>
