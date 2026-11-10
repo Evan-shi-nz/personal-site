@@ -57,7 +57,7 @@ personal-site/
 | `/` | 头像、简介、近 30 天收入卡片、Now、雅思进度、新西兰之路时间线、最新文章和动态、GitHub 贡献热力图 |
 | `/blog`、`/blog/page/2`… | 文章列表，每页 10 篇 |
 | `/blog/<文件名>` | 文章页 |
-| `/notes`、`/notes/page/2`… | 短动态列表，每页 20 条 |
+| `/notes`、`/notes/page/2`… | 短动态列表，每页 20 条（**目前已关闭**，见下方“X（推特）同步”） |
 | `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
 | `/guestbook` | 留言板 |
 | `/cv` | 英文简历（CV，新西兰的叫法），按钮可另存为 PDF；旧地址 `/resume` 自动跳转 |
@@ -207,6 +207,8 @@ draft: false
 `draft: true` 的文章不会发布。
 
 ## X（推特）同步
+
+> **目前关闭。** `src/site.config.ts` 里 `notesEnabled: false`：导航、首页和 404 页不显示"笔记"，笔记页面不让搜索引擎收录，也不进 sitemap。以后想开启：把它改成 `true`，再按下面的步骤填好两个 Token。
 
 每条帖子会变成网站上的一条笔记：
 

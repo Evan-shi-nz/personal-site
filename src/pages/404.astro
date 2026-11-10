@@ -5,7 +5,7 @@ import { site } from "../site.config";
 const links = [
   ["/", "Home", "Who I am and what I'm working on"],
   ["/blog", "Blog", "IELTS, moving to New Zealand, building products"],
-  ["/notes", "Notes", "Short updates, many from X"],
+  ...(site.notesEnabled ? [["/notes", "Notes", "Short updates, many from X"]] : []),
   ["/revenue", "Revenue", "What my products earn"],
   ["/cv", "CV", "My experience and skills"],
   ["/guestbook", "Guestbook", "Leave me a message"],

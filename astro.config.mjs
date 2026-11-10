@@ -11,7 +11,8 @@ export default defineConfig({
   // Links to other websites (X, GitHub, links inside posts and notes) open in a new tab
   integrations: [
     // Sample posts and notes (file names starting with "sample-") stay out of the sitemap
-    sitemap({ filter: (page) => !/\/sample-/.test(page) }),
+    // and so do notes while the Notes section is switched off
+    sitemap({ filter: (page) => !/\/sample-/.test(page) && (site.notesEnabled || !/\/notes(\/|$)/.test(page)) }),
     externalLinks({ site: site.url }),
   ],
 });

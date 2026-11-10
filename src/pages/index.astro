@@ -9,7 +9,7 @@ import ielts from "../data/ielts.json";
 import journey from "../data/journey.json";
 
 const posts = (await getPosts()).slice(0, 5);
-const notes = (await getNotes()).slice(0, 3);
+const notes = site.notesEnabled ? (await getNotes()).slice(0, 3) : [];
 
 type Mock = { date: string; listening: number; reading: number; writing: number; speaking: number };
 const mocks = (ielts.mocks as Mock[]).slice().sort((a, b) => a.date.localeCompare(b.date));

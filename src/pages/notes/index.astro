@@ -9,7 +9,7 @@ import { site } from "../../site.config";
 
 const [first] = paginate(await getNotes(), site.pageSize.notes);
 ---
-<Base title="Notes" description="Short updates from Evan Shi, most of them first posted on X.">
+<Base title="Notes" description="Short updates from Evan Shi, most of them first posted on X." noindex={!site.notesEnabled}>
   <h1>Notes</h1>
   <p class="muted">Short updates.{site.links.x && <> Most of them were first posted on <a href={site.links.x} {...newTab}>X</a>.</>}</p>
   {first.items.length === 0 && <p class="muted">Nothing here yet.</p>}

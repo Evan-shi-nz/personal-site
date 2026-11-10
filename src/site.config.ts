@@ -38,6 +38,9 @@ export const site = {
   revenue: { currency: "usd", rates: { usd: 1, hkd: 7.8 } as Record<string, number> },
   // Home page sections that can be switched off
   home: { github: false }, // turn on once the GitHub account has some activity
+  // The Notes section (short updates, can sync from X). Off for now: hidden from the menu,
+  // the home page and search engines. The X sync code stays ready; see README.
+  notesEnabled: false,
   // Items per page
   pageSize: { blog: 10, notes: 20 },
 };

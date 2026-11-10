@@ -20,9 +20,9 @@ const image = new URL(site.ogImage, Astro.site);
 const path = cleanPath;
 const nav = [
   ["/blog", "Blog"],
-  ["/notes", "Notes"],
-  ["/cv", "CV"],
+  ...(site.notesEnabled ? [["/notes", "Notes"]] : []),
   ["/revenue", "Revenue"],
+  ["/cv", "CV"],
   ["/guestbook", "Guestbook"],
 ];
 

@@ -13,7 +13,7 @@ export async function getStaticPaths() {
 }
 const { items, page, pages } = Astro.props;
 ---
-<Base title={`Notes, page ${page}`} description={`Short updates from Evan Shi, page ${page} of ${pages}.`}>
+<Base title={`Notes, page ${page}`} description={`Short updates from Evan Shi, page ${page} of ${pages}.`} noindex={!site.notesEnabled}>
   <h1>Notes</h1>
   {items.map((note) => <NoteCard note={note} />)}
   <Pager base="/notes" page={page} pages={pages} />
