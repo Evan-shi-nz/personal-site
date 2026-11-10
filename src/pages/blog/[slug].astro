@@ -30,5 +30,5 @@ const { title, description, date, updated, tags } = post.data;
     {newer ? <a href={`/blog/${newer.id}`} rel="prev"><span class="muted small">← Newer</span><span>{newer.data.title}</span></a> : <span />}
     {older ? <a href={`/blog/${older.id}`} rel="next" class="older"><span class="muted small">Older →</span><span>{older.data.title}</span></a> : <span />}
   </nav>
-  <p class="small"><a href="/blog">All posts</a></p>
+  <p class="small"><a href="/blog">All blog posts</a></p>
 </Base>

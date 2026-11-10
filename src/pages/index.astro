@@ -70,7 +70,7 @@ const monthLabel = (ym: string) =>
     </section>
 
     <section class="card" aria-labelledby="journey-h">
-      <h2 id="journey-h" class="card-h">Journey to New Zealand</h2>
+      <h2 id="journey-h" class="card-h">My plan for New Zealand</h2>
       <ol class="timeline">
         {journey.map((step, i) => (
           <li class:list={[{ done: step.done, next: i === nextStep }]}>
@@ -83,9 +83,9 @@ const monthLabel = (ym: string) =>
     </section>
   </div>
 
-  <h2>Writing</h2>
+  <h2>Blog</h2>
   <PostList posts={posts} />
-  <p><a href="/blog">All posts →</a></p>
+  <p><a href="/blog">All blog posts →</a></p>
 
   <section id="side" hidden>
     <h2>Side projects</h2>
