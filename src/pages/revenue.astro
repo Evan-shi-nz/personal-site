@@ -37,7 +37,12 @@ const { currency, rates } = site.revenue;
           </button>
         ))}
       </div>
+      <!-- One project selected: a direct link. All projects: a menu with each project's TrustMRR page. -->
       <a id="rev-verify" class="verify" target="_blank" rel="noopener noreferrer" hidden>✓ Verified on TrustMRR ↗</a>
+      <details id="rev-verify-all" class="verify-menu" hidden>
+        <summary class="verify">✓ Verified on TrustMRR</summary>
+        <ul id="rev-verify-list"></ul>
+      </details>
     </div>
 
     <div class="chart-wrap">
@@ -71,10 +76,24 @@ const { currency, rates } = site.revenue;
   .range-tabs button[aria-selected="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
   .verify { font-size: 14px; font-weight: 600; color: var(--good); text-decoration: none; }
   .verify:hover { text-decoration: underline; }
+  .verify-menu { position: relative; }
+  .verify-menu summary { cursor: pointer; list-style: none; }
+  .verify-menu summary::-webkit-details-marker { display: none; }
+  .verify-menu summary::after { content: " ▾"; font-size: 11px; }
+  .verify-menu[open] summary::after { content: " ▴"; }
+  .verify-menu ul {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; list-style: none; margin: 0; padding: 6px;
+    min-width: 200px; max-height: 280px; overflow-y: auto;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 24px rgb(0 0 0 / 0.12);
+  }
+  :global(.verify-menu li a) { display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px; border-radius: 6px; text-decoration: none; font-size: 14px; color: var(--fg); }
+  :global(.verify-menu li a:hover) { background: var(--soft); }
+  @media (max-width: 560px) { .verify-menu ul { left: 0; right: auto; } }
   .chart-wrap { position: relative; height: 240px; }
   .chart-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; }
   .chart-empty[hidden] { display: none; }
   .rev-note { margin: 10px 0 0; }
+  .rev-note:empty { display: none; }
 </style>
 
 <script>
@@ -132,11 +151,18 @@ const { currency, rates } = site.revenue;
         ? now ? `<span class="up">New</span>` : ""
         : `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="muted">vs previous ${meta.long.replace("last ", "")}</span>`;
 
-    // TrustMRR link for the selected project.
+    // TrustMRR: a direct link for one project, a menu of every project's page for "All projects".
     const one = selected === "all" ? null : ok.find((p) => p.id === selected);
     const verify = $<HTMLAnchorElement>("rev-verify");
     verify.hidden = !one?.trustmrr;
     if (one?.trustmrr) verify.href = one.trustmrr;
+    const verified = ok.filter((p) => p.trustmrr);
+    const menu = $<HTMLDetailsElement>("rev-verify-all");
+    menu.hidden = !!one || verified.length === 0;
+    menu.open = false;
+    $("rev-verify-list").innerHTML = verified
+      .map((p) => `<li><a href="${p.trustmrr!.replace(/"/g, "&quot;")}" target="_blank" rel="noopener noreferrer"><span>${p.label.replace(/[<&]/g, "")}</span><span class="muted">TrustMRR ↗</span></a></li>`)
+      .join("");
 
     // Datasets: one per project (top ones by revenue in this range), the rest as "Others".
     const ranked = [...shown].sort((a, b) => sumKeys(b, unit, current) - sumKeys(a, unit, current));
@@ -206,7 +232,7 @@ const { currency, rates } = site.revenue;
     chart = new Chart($<HTMLCanvasElement>("rev-canvas"), config);
 
     // Note under the chart.
-    const notes = [`Revenue before fees, in ${CUR.toUpperCase()} (HK$7.80 = US$1).`];
+    const notes: string[] = [];
     if (ok.some((p) => !p.complete)) notes.push("Older transactions of some projects are still being added.");
     const skipped = [...new Set(ok.flatMap((p) => p.unconverted))];
     if (skipped.length) notes.push(`Revenue in ${skipped.join(", ")} is not included (no exchange rate set).`);
@@ -239,6 +265,11 @@ const { currency, rates } = site.revenue;
   );
   // Redraw with the right colours when the theme changes.
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => projects.length && render());
+  // Close the TrustMRR menu when clicking elsewhere.
+  document.addEventListener("click", (e) => {
+    const menu = $<HTMLDetailsElement>("rev-verify-all");
+    if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+  });
 
   (async () => {
     try {
@@ -250,9 +281,13 @@ const { currency, rates } = site.revenue;
       $("rev-empty").textContent = projects.length ? "Couldn't load revenue right now." : "Revenue will appear here once projects are connected.";
       return;
     }
-    // Biggest project first (by the last 30 days), so it reads as the main one.
+    // Biggest project first (by the last 30 days). Projects without a custom name are numbered
+    // by that rank, so "Project 1" is always the one earning the most right now.
     const { unit, current } = rangeKeys("30d");
     projects.sort((a, b) => sumKeys(b, unit, current) - sumKeys(a, unit, current));
+    projects.forEach((p, i) => {
+      if (/^Project \d+$/i.test(p.label)) p.label = `Project ${i + 1}`;
+    });
     fillPicker();
     render();
   })();
