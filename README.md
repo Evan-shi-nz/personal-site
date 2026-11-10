@@ -61,7 +61,7 @@ personal-site/
 | `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
 | `/guestbook` | 留言板 |
 | `/resume` | 英文简历，按钮可另存为 PDF |
-| `/revenue` | 收入仪表盘（近 30 天、环比、累计、按天/按月图表）、公开验证 Key、验证命令 |
+| `/revenue` | 收入仪表盘：可切换“全部项目 / 单个项目”，近 30 天、环比、累计、按天/按月图表、每个项目的公开验证 Key |
 | `/admin` | 写作后台（不会被搜索引擎收录） |
 | `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 
@@ -126,11 +126,23 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
 
 3. 点 **部署**，等 1–2 分钟。成功后会得到一个 `personal-site.<你的子域>.workers.dev` 地址。
 4. 绑定域名：进入这个 Worker → **设置（Settings）→ 域和路由（Domains & Routes）→ 添加 → 自定义域（Custom domain）**，填你的域名（例如 `www.yourname.com`）。域名在同一个 Cloudflare 账号里时，DNS 记录和 HTTPS 证书会自动创建。然后把 `src/site.config.ts` 的 `url` 和 `public/robots.txt` 里的地址改成这个域名。
-5. 添加 Stripe Key：Worker → **设置 → 变量和机密（Variables and Secrets）→ 添加**：
+5. 添加 Stripe Key（支持多个项目，每个 Stripe 账号一个 Key）：Worker → **设置 → 变量和机密（Variables and Secrets）→ 添加**：
 
    | 类型 | 名称 | 值 |
    |---|---|---|
-   | 文本（Text） | `PUBLIC_STRIPE_VERIFY_KEY` | `rk_live_...`（第 2 步的 Key） |
+   | 文本（Text） | `PUBLIC_STRIPE_VERIFY_KEYS` | 每行一个项目，格式 `显示名称=Key` |
+
+   例如：
+
+   ```
+   Project 1=rk_live_第一个账号的Key
+   Project 2=rk_live_第二个账号的Key
+   ```
+
+   - 显示名称可以随便起，不想公开项目名就写 `Project 1`；省略名称（只写 Key）会自动叫 `Project 1`、`Project 2`……
+   - 以后新增网站，往下加一行即可，收入页会自动多一个切换标签，不需要改代码或重新部署。
+   - 每个 Key 都必须**只开 Balance → Read**。能读取客户数据的 Key 会被网站拒绝，不会显示出来。
+   - 项目的顺序就是网址里的编号：第一行是 `/api/revenue?project=1`，第二行是 `?project=2`。调整顺序会改变编号。
 
    保存后立即生效，不需要重新构建。`wrangler.jsonc` 里设置了 `keep_vars: true`，以后自动部署不会把它清掉。
 
@@ -265,7 +277,7 @@ npm test
 **收入页提示 "oldest transactions not included yet"**
 Cloudflare Workers 免费版每次请求最多 50 个子请求，接口最多读 4,500 笔交易。超过后需要升级 Workers 付费版，或者把历史汇总存进 Cloudflare KV。
 
-**改了 `PUBLIC_STRIPE_VERIFY_KEY` 后数字没变**
+**改了 `PUBLIC_STRIPE_VERIFY_KEYS` 后数字没变**
 收入数据在 Cloudflare 边缘缓存 6 小时，等缓存过期即可。页面上显示的 Key 是实时从接口读取的，改完马上生效。
 
 **国内打不开网站**

@@ -3,8 +3,8 @@ import { newTab } from "../lib/links";
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
-// Numbers and the key itself come from /api/revenue at runtime
-// (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEY), so nothing here needs a rebuild.
+// Projects, numbers and keys come from /api/revenue at runtime
+// (Cloudflare variable PUBLIC_STRIPE_VERIFY_KEYS), so adding a project needs no rebuild.
 const apiUrl = new URL("/api/revenue", site.url).href;
 ---
 <Base title="Revenue" description="Evan Shi's product revenue, read live from Stripe, with a public key anyone can use to verify it.">
@@ -13,6 +13,8 @@ const apiUrl = new URL("/api/revenue", site.url).href;
     I run small online products. I don't name them here, but the money they make is real.
     These numbers come straight from Stripe, and you can verify them yourself.
   </p>
+
+  <div class="proj-tabs" id="proj-tabs" role="tablist" aria-label="Project" hidden></div>
 
   <section class="rev-card" aria-live="polite">
     <div class="rev-head">
@@ -31,29 +33,27 @@ const apiUrl = new URL("/api/revenue", site.url).href;
 
   <h2 id="verify">Verify it yourself</h2>
   <p>
-    This is a Stripe <strong>restricted key</strong> with only <code>Balance: Read</code> permission.
-    It can see my balance and the amount of each transaction. It cannot see customers, emails or products,
+    Each project has its own Stripe <strong>restricted key</strong> with only <code>Balance: Read</code> permission.
+    It can see that account's balance and the amount of each transaction. It cannot see customers, emails or products,
     and it cannot change anything.
   </p>
-  <div class="key-box" id="key-box" hidden>
-    <code id="key"></code>
-    <button type="button" data-copy="key">Copy key</button>
+  <div id="keys">
+    <p class="muted">The verification keys have not been published yet.</p>
   </div>
-  <p class="muted" id="key-missing">The verification key has not been published yet.</p>
 
   <h3>Option 1: the open-source verifier</h3>
   <p>
     <a href={site.repos.verifier} {...newTab}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
-    It first confirms that this key <em>cannot</em> read customer data, then adds up every transaction from Stripe and
-    compares the result with this page.
+    It first confirms that the key <em>cannot</em> read customer data, then adds up every transaction from Stripe and
+    compares the result with this page. Download it once:
   </p>
-  <pre><code id="cmd">git clone {site.repos.verifier}
-cd stripe-revenue-verifier
-node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre>
-  <button type="button" data-copy="cmd">Copy commands</button>
+  <pre><code id="clone">git clone {site.repos.verifier}
+cd stripe-revenue-verifier</code></pre>
+  <button type="button" data-copy="clone">Copy commands</button>
+  <p>Then run the <code>node verify.mjs …</code> command shown under each key above.</p>
 
   <h3>Option 2: ask Stripe directly</h3>
-  <pre><code id="curl">curl https://api.stripe.com/v1/balance -u <span data-key>rk_live_...</span>:</code></pre>
+  <pre><code id="curl">curl https://api.stripe.com/v1/balance -u <span data-first-key>rk_live_...</span>:</code></pre>
   <button type="button" data-copy="curl">Copy command</button>
 
   <h3>How the numbers are calculated</h3>
@@ -67,7 +67,16 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
 </Base>
 
 <style>
-  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; margin: 24px 0 8px; }
+  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; margin: 12px 0 8px; }
+  .proj-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 24px; }
+  :global(.proj-tabs button) { background: transparent; color: var(--fg); border: 1px solid var(--line); padding: 6px 14px; font-size: 14px; border-radius: 10px; }
+  :global(.proj-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  :global(.proj-tabs button .amt) { opacity: 0.65; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  :global(.key-item) { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }
+  :global(.key-item:first-child) { border-top: 0; padding-top: 4px; }
+  :global(.key-item .key-label) { font-weight: 600; }
+  :global(.key-item pre) { margin: 0; }
+  :global(.key-item .row) { display: flex; gap: 8px; flex-wrap: wrap; }
   .rev-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 14px; }
   .rev-head #updated { margin-left: auto; }
   .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); padding: 3px 10px 3px 8px; border-radius: 99px; }
@@ -94,10 +103,13 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
   @media (max-width: 480px) { .rev-head #updated { margin-left: 0; width: 100%; } }
 </style>
 
+
 <script>
   type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
   type Currency = { total: Bucket; months: Record<string, Bucket>; days: Record<string, Bucket> };
+  type Project = { id: string; label: string };
   type Data = {
+    project?: Project;
     verifyKey?: string;
     generatedAt: string;
     complete: boolean;
@@ -107,6 +119,7 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     error?: string;
   };
 
+  const API = new URL("/api/revenue", location.origin).href;
   const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
   const money = (minor: number, cur: string, digits = 0) =>
     new Intl.NumberFormat("en-US", {
@@ -117,19 +130,45 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     }).format(zeroDecimal.has(cur) ? minor : minor / 100);
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
   const $ = (id: string) => document.getElementById(id)!;
+  const empty = (): Bucket => ({ gross: 0, refunds: 0, disputes: 0, fees: 0, net: 0, payments: 0 });
 
-  let data: Data;
+  let projects: Project[] = [];
+  const results = new Map<string, Data>(); // project id -> data (or error)
+  let selected = "all";
   let currency = "";
   let range: "days" | "months" = "days";
 
-  function showKey(key?: string) {
-    if (!key || !key.startsWith("rk_")) return;
-    $("key").textContent = key;
-    $("key-box").hidden = false;
-    $("key-missing").hidden = true;
-    document.querySelectorAll("[data-key]").forEach((el) => (el.textContent = key));
+  // ---------- combining projects for "All projects" ----------
+  function addBucket(into: Bucket, b: Bucket) {
+    for (const k of Object.keys(into) as (keyof Bucket)[]) into[k] += b[k] ?? 0;
   }
+  function addMap(into: Record<string, Bucket>, from: Record<string, Bucket> = {}) {
+    for (const [k, b] of Object.entries(from)) addBucket((into[k] ??= empty()), b);
+  }
+  function combine(list: Data[]): Data {
+    const out: Data = { generatedAt: "", complete: true, currencies: {}, last30Days: {}, previous30Days: {} };
+    for (const d of list) {
+      out.complete &&= d.complete;
+      if (!out.generatedAt || d.generatedAt < out.generatedAt) out.generatedAt = d.generatedAt;
+      for (const [cur, c] of Object.entries(d.currencies)) {
+        const t = (out.currencies[cur] ??= { total: empty(), months: {}, days: {} });
+        addBucket(t.total, c.total);
+        addMap(t.months, c.months);
+        addMap(t.days, c.days);
+      }
+      addMap(out.last30Days, d.last30Days);
+      addMap(out.previous30Days, d.previous30Days);
+    }
+    for (const c of Object.values(out.currencies)) {
+      c.months = Object.fromEntries(Object.entries(c.months).sort(([a], [b]) => a.localeCompare(b)));
+      c.days = Object.fromEntries(Object.entries(c.days).sort(([a], [b]) => a.localeCompare(b)));
+    }
+    return out;
+  }
+  const okResults = () => projects.map((p) => results.get(p.id)).filter((d): d is Data => !!d && !d.error);
+  const current = (): Data | undefined => (selected === "all" ? combine(okResults()) : results.get(selected));
 
+  // ---------- small helpers ----------
   function timeAgo(iso: string) {
     const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
     if (min < 1) return "just now";
@@ -137,14 +176,11 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     const h = Math.round(min / 60);
     return `${h} hour${h > 1 ? "s" : ""} ago`;
   }
-
   function delta(now: number, before: number) {
     if (!before) return now ? `<span class="delta up">New</span>` : `<span class="delta">–</span>`;
     const pct = ((now - before) / before) * 100;
-    const cls = pct >= 0 ? "up" : "down";
-    return `<span class="delta ${cls}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="small muted">vs previous 30 days</span>`;
+    return `<span class="delta ${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="small muted">vs previous 30 days</span>`;
   }
-
   function label(key: string) {
     if (range === "months") {
       const [y, m] = key.split("-").map(Number);
@@ -152,14 +188,17 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     }
     return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" });
   }
+  const mainCurrency = (d: Data) =>
+    Object.entries(d.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross)[0]?.[0];
 
+  // ---------- chart ----------
   function chart(series: [string, Bucket][], cur: string) {
     if (series.length === 0) return `<p class="muted small">No data for this range yet.</p>`;
     const W = 600, H = 180, gap = series.length > 40 ? 1 : 3;
     const max = Math.max(1, ...series.map(([, b]) => b.gross));
     const bw = (W - gap * (series.length - 1)) / series.length;
     const bars = series
-      .map(([k, b], i) => {
+      .map(([, b], i) => {
         const h = b.gross > 0 ? Math.max(2, (b.gross / max) * (H - 16)) : 2;
         const x = i * (bw + gap);
         return `<rect class="hit" x="${x}" y="0" width="${bw + gap}" height="${H}" fill="transparent" data-i="${i}"></rect><rect class="bar${b.gross ? "" : " zero"}" x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 2)}"></rect>`;
@@ -175,7 +214,6 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
       </div>
       <div class="axis"><span>${label(series[0][0])}</span><span>${label(series[series.length - 1][0])}</span></div>`;
   }
-
   function bindTooltip(series: [string, Bucket][], cur: string) {
     const box = document.getElementById("chart");
     if (!box) return;
@@ -185,11 +223,9 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
         const [k, b] = series[Number(r.dataset.i)];
         tip.textContent = `${label(k)} · ${money(b.gross, cur, 2)}${b.payments ? ` · ${b.payments} payment${b.payments > 1 ? "s" : ""}` : ""}`;
         tip.hidden = false;
-        // Keep the tooltip inside the chart, even for the first and last bars
         const rb = r.getBoundingClientRect(), cb = box.getBoundingClientRect();
         const half = tip.offsetWidth / 2;
-        const x = Math.min(Math.max(rb.left - cb.left + rb.width / 2, half), cb.width - half);
-        tip.style.left = `${x}px`;
+        tip.style.left = `${Math.min(Math.max(rb.left - cb.left + rb.width / 2, half), cb.width - half)}px`;
       };
       r.addEventListener("mouseenter", show);
       r.addEventListener("touchstart", show, { passive: true });
@@ -197,13 +233,57 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
     box.addEventListener("mouseleave", () => (tip.hidden = true));
   }
 
-  function render() {
-    const c = data.currencies[currency];
-    const l30 = data.last30Days[currency] ?? ({ gross: 0, net: 0, payments: 0 } as Bucket);
-    const p30 = data.previous30Days?.[currency] ?? ({ gross: 0 } as Bucket);
-    const series = (range === "days" ? Object.entries(c.days ?? {}) : Object.entries(c.months).slice(-24)) as [string, Bucket][];
+  // ---------- rendering ----------
+  function renderProjectTabs() {
+    const tabs = $("proj-tabs");
+    if (projects.length < 2) return; // one project: no switcher needed
+    const items = [{ id: "all", label: "All projects" }, ...projects];
+    tabs.innerHTML = items
+      .map((p) => {
+        const d = p.id === "all" ? combine(okResults()) : results.get(p.id);
+        const cur = d && !d.error ? mainCurrency(d) : undefined;
+        const amt = cur ? `<span class="amt">${money(d!.last30Days[cur]?.gross ?? 0, cur)}</span>` : "";
+        return `<button type="button" role="tab" aria-selected="${p.id === selected}" data-project="${esc(p.id)}">${esc(p.label)}${amt}</button>`;
+      })
+      .join("");
+    tabs.hidden = false;
+  }
 
-    $("rev-body").innerHTML = `
+  function renderCurrencyTabs(d: Data) {
+    const list = Object.entries(d.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross).map(([k]) => k);
+    if (!list.includes(currency)) currency = list[0] ?? "";
+    $("cur-tabs").innerHTML =
+      list.length < 2
+        ? ""
+        : list.map((k) => `<button type="button" role="tab" aria-selected="${k === currency}" data-cur="${esc(k)}">${esc(k.toUpperCase())}</button>`).join("");
+  }
+
+  function render() {
+    renderProjectTabs();
+    const d = current();
+    const body = $("rev-body");
+    if (!d || d.error) {
+      $("badge").hidden = true;
+      $("updated").textContent = "";
+      $("cur-tabs").innerHTML = "";
+      const msg = d?.error ?? "No data yet.";
+      body.innerHTML = /not set/.test(msg)
+        ? `<p class="muted">Revenue numbers will appear here once the verification keys are connected.</p>`
+        : `<p class="muted">Couldn't load the numbers for this project (${esc(msg)}).</p>`;
+      return;
+    }
+    $("badge").hidden = false;
+    $("updated").textContent = d.generatedAt ? `Updated ${timeAgo(d.generatedAt)}` : "";
+    renderCurrencyTabs(d);
+    if (!currency) {
+      body.innerHTML = `<p class="muted">No payments yet.</p>`;
+      return;
+    }
+    const c = d.currencies[currency];
+    const l30 = d.last30Days[currency] ?? empty();
+    const p30 = d.previous30Days?.[currency] ?? empty();
+    const series = (range === "days" ? Object.entries(c.days ?? {}) : Object.entries(c.months).slice(-24)) as [string, Bucket][];
+    body.innerHTML = `
       <div class="kpis">
         <div class="kpi"><div class="label">Revenue, last 30 days</div><div class="value">${money(l30.gross, currency)}</div>${delta(l30.gross, p30.gross)}</div>
         <div class="kpi"><div class="label">All-time revenue</div><div class="value">${money(c.total.gross, currency)}</div><span class="small muted">${c.total.payments.toLocaleString("en-US")} payments</span></div>
@@ -217,63 +297,43 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
         </div>
       </div>
       ${chart(series, currency)}
-      ${data.complete ? "" : `<p class="small muted">Older transactions are not included yet.</p>`}`;
-
-    document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) =>
-      b.addEventListener("click", () => {
-        range = b.dataset.range as typeof range;
-        render();
-      }),
-    );
+      ${d.complete ? "" : `<p class="small muted">Older transactions are not included yet.</p>`}`;
     bindTooltip(series, currency);
   }
 
-  function renderCurrencyTabs() {
-    const list = Object.entries(data.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross).map(([k]) => k);
-    currency = list[0];
-    const tabs = $("cur-tabs");
-    if (list.length < 2) return;
-    const paint = () => {
-      tabs.innerHTML = list
-        .map((k) => `<button type="button" role="tab" aria-selected="${k === currency}" data-cur="${esc(k)}">${esc(k.toUpperCase())}</button>`)
-        .join("");
-      tabs.querySelectorAll<HTMLButtonElement>("button").forEach((b) =>
-        b.addEventListener("click", () => {
-          currency = b.dataset.cur!;
-          paint();
-          render();
-        }),
-      );
-    };
-    paint();
+  function renderKeys() {
+    const withKeys = projects.map((p) => ({ p, d: results.get(p.id) })).filter(({ d }) => d?.verifyKey?.startsWith("rk_"));
+    if (withKeys.length === 0) return;
+    $("keys").innerHTML = withKeys
+      .map(
+        ({ p, d }) => `
+        <div class="key-item">
+          <span class="key-label">${esc(p.label)}</span>
+          <div class="key-box"><code id="key-${esc(p.id)}">${esc(d!.verifyKey!)}</code><button type="button" data-copy="key-${esc(p.id)}">Copy key</button></div>
+          <pre><code id="cmd-${esc(p.id)}">node verify.mjs ${esc(d!.verifyKey!)} --compare ${API}?project=${esc(p.id)}</code></pre>
+          <div class="row"><button type="button" data-copy="cmd-${esc(p.id)}">Copy command</button></div>
+        </div>`,
+      )
+      .join("");
+    document.querySelectorAll("[data-first-key]").forEach((el) => (el.textContent = withKeys[0].d!.verifyKey!));
   }
 
-  async function load() {
-    try {
-      const res = await fetch("/api/revenue");
-      data = await res.json();
-      showKey(data.verifyKey);
-      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
-      $("badge").hidden = false;
-      $("updated").textContent = `Updated ${timeAgo(data.generatedAt)}`;
-      if (Object.keys(data.currencies).length === 0) {
-        $("rev-body").innerHTML = `<p class="muted">No payments yet.</p>`;
-        return;
-      }
-      renderCurrencyTabs();
+  // ---------- events (delegated, since most buttons are rendered by script) ----------
+  document.addEventListener("click", async (ev) => {
+    const btn = (ev.target as HTMLElement).closest<HTMLButtonElement>("button");
+    if (!btn) return;
+    if (btn.dataset.project) {
+      selected = btn.dataset.project;
       render();
-    } catch (err) {
-      const msg = String((err as Error).message);
-      $("rev-body").innerHTML = msg.includes("not set")
-        ? `<p class="muted">Revenue numbers will appear here once the verification key is connected.</p>`
-        : `<p class="muted">Couldn't load the numbers right now (${esc(msg)}). The verification commands below still work.</p>`;
-    }
-  }
-
-  document.querySelectorAll<HTMLButtonElement>("button[data-copy]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const el = $(btn.dataset.copy!);
-      const label = btn.textContent;
+    } else if (btn.dataset.cur) {
+      currency = btn.dataset.cur;
+      render();
+    } else if (btn.dataset.range) {
+      range = btn.dataset.range as typeof range;
+      render();
+    } else if (btn.dataset.copy) {
+      const el = $(btn.dataset.copy);
+      const text = btn.textContent;
       try {
         await navigator.clipboard.writeText(el.textContent ?? "");
         btn.textContent = "Copied";
@@ -284,9 +344,40 @@ node verify.mjs <span data-key>rk_live_...</span> --compare {apiUrl}</code></pre
         getSelection()?.addRange(r);
         btn.textContent = "Selected, press Ctrl+C";
       }
-      setTimeout(() => (btn.textContent = label), 2000);
-    });
+      setTimeout(() => (btn.textContent = text), 2000);
+    }
   });
+
+  // ---------- loading ----------
+  async function load() {
+    try {
+      const res = await fetch(`${API}/projects`);
+      projects = (await res.json()).projects ?? [];
+    } catch {
+      projects = [];
+    }
+    if (projects.length === 0) {
+      results.set("none", { error: "PUBLIC_STRIPE_VERIFY_KEYS is not set" } as Data);
+      selected = "none";
+      render();
+      return;
+    }
+    if (projects.length === 1) selected = projects[0].id;
+    await Promise.all(
+      projects.map(async (p) => {
+        try {
+          const res = await fetch(`${API}?project=${encodeURIComponent(p.id)}`);
+          const d: Data = await res.json();
+          results.set(p.id, res.ok ? d : { ...d, error: d.error || `HTTP ${res.status}` });
+        } catch (err) {
+          results.set(p.id, { error: String((err as Error).message) } as Data);
+        }
+      }),
+    );
+    if (selected === "all" && okResults().length === 0) selected = projects[0].id; // show the error of the first project
+    render();
+    renderKeys();
+  }
 
   load();
 </script>
