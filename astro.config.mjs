@@ -5,6 +5,8 @@ import externalLinks from "./src/lib/external-links.mjs";
 
 // Static pages; the API routes and the X sync cron run in the Worker (worker/index.js).
 export default defineConfig({
+  // Keep CSS working on older iPhones (Safari 15+): the minifier then keeps -webkit- prefixes
+  vite: { build: { cssTarget: ["safari15", "chrome100", "firefox100"] } },
   site: site.url,
   trailingSlash: "never",
   build: { format: "file" },
