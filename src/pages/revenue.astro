@@ -45,26 +45,10 @@ const { currency, rates } = site.revenue;
     </div>
   </section>
 
-  <h2>How these numbers are checked</h2>
-  <ul>
-    <li>
-      <strong>Verified by a third party.</strong> Each project is connected to{" "}
-      <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>, which reads its revenue directly from Stripe.
-      Use the links in the table to see each one.
-    </li>
-    <li>
-      <strong>Read from Stripe.</strong> This page uses a read-only key per project that can see payment amounts and
-      dates only, never customers. The key stays on the server.
-    </li>
-    <li>
-      <strong>Revenue</strong> means successful payments before fees. <strong>Change</strong> compares the last 30 days
-      with the 30 days before. Other currencies are converted to US dollars at a fixed rate (HK$7.80 = US$1).
-    </li>
-    <li>
-      Numbers refresh every few hours, so they can differ slightly from TrustMRR. The calculation is{" "}
-      <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>open source</a>.
-    </li>
-  </ul>
+  <p class="small muted">
+    Each project is verified on <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>, which reads its revenue
+    directly from Stripe. Use the links in the table to check each one.
+  </p>
 </Base>
 
 <style>
@@ -223,7 +207,7 @@ const { currency, rates } = site.revenue;
       })
       .join("");
 
-    const notes = [`All amounts in ${CUR.toUpperCase()}. Select a row to see its chart.`];
+    const notes = [`Revenue before fees, in ${CUR.toUpperCase()} (HK$7.80 = US$1). Select a row to see its chart.`];
     const updated = rows.map((r) => r.generatedAt).filter(Boolean).sort()[0];
     if (updated) notes.push(`Updated ${timeAgo(updated!)}.`);
     if (!total.complete) notes.push("Older transactions of some projects are still being added.");
