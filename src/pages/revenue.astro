@@ -188,8 +188,14 @@ cd stripe-revenue-verifier</code></pre>
     }
     return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" });
   }
-  const mainCurrency = (d: Data) =>
-    Object.entries(d.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross)[0]?.[0];
+  // Currencies that ever had revenue, most active first: by the last 30 days, then all time.
+  // (Fee-only currencies, e.g. a settlement currency, are hidden.)
+  const currencyOrder = (d: Data) =>
+    Object.entries(d.currencies)
+      .filter(([, c]) => c.total.gross > 0)
+      .sort((a, b) => (d.last30Days[b[0]]?.gross ?? 0) - (d.last30Days[a[0]]?.gross ?? 0) || b[1].total.gross - a[1].total.gross)
+      .map(([k]) => k);
+  const mainCurrency = (d: Data) => currencyOrder(d)[0];
 
   // ---------- chart ----------
   function chart(series: [string, Bucket][], cur: string) {
@@ -250,7 +256,7 @@ cd stripe-revenue-verifier</code></pre>
   }
 
   function renderCurrencyTabs(d: Data) {
-    const list = Object.entries(d.currencies).sort((a, b) => b[1].total.gross - a[1].total.gross).map(([k]) => k);
+    const list = currencyOrder(d);
     if (!list.includes(currency)) currency = list[0] ?? "";
     $("cur-tabs").innerHTML =
       list.length < 2

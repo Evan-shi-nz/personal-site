@@ -7,9 +7,10 @@
 const PAGE_SIZE = 20;
 const LIMITS = { name: 40, email: 254, message: 1000 };
 
-let schemaReady;
+// Create tables once per database (per Worker instance).
+const schemaReady = new WeakMap();
 function ensureSchema(db) {
-  schemaReady ??= db
+  if (!schemaReady.has(db)) schemaReady.set(db, db
     .batch([
       db.prepare(`CREATE TABLE IF NOT EXISTS guestbook (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,10 +25,10 @@ function ensureSchema(db) {
       db.prepare(`CREATE INDEX IF NOT EXISTS guestbook_visitor ON guestbook (visitor, created_at)`),
     ])
     .catch((err) => {
-      schemaReady = undefined;
+      schemaReady.delete(db);
       throw err;
-    });
-  return schemaReady;
+    }));
+  return schemaReady.get(db);
 }
 
 export async function guestbook(request, env) {

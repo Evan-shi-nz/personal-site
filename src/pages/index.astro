@@ -65,7 +65,7 @@ const notes = (await getNotes()).slice(0, 3);
         for (const [cur, b] of Object.entries(d.last30Days ?? {})) totals[cur] = (totals[cur] ?? 0) + (b as { gross: number }).gross;
       }
       const [cur, minor] = Object.entries(totals).sort((a, b) => b[1] - a[1])[0] ?? [];
-      if (!cur) return;
+      if (!cur || !minor) return;
       document.getElementById("rev-mini-value")!.textContent = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: cur.toUpperCase(),

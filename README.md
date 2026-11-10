@@ -143,6 +143,7 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
    - 以后新增网站，往下加一行即可，收入页会自动多一个切换标签，不需要改代码或重新部署。
    - 每个 Key 都必须**只开 Balance → Read**。能读取客户数据的 Key 会被网站拒绝，不会显示出来。
    - 项目的顺序就是网址里的编号：第一行是 `/api/revenue?project=1`，第二行是 `?project=2`。调整顺序会改变编号。
+   - 换了新 Key 后，这个项目的交易记录会重新读取一遍（记录按 Key 区分，数据库里不保存 Key 本身）。
 
    保存后立即生效，不需要重新构建。`wrangler.jsonc` 里设置了 `keep_vars: true`，以后自动部署不会把它清掉。
 
@@ -274,8 +275,8 @@ npm test
 
 ## 常见问题
 
-**收入页提示 "oldest transactions not included yet"**
-Cloudflare Workers 免费版每次请求最多 50 个子请求，接口最多读 4,500 笔交易。超过后需要升级 Workers 付费版，或者把历史汇总存进 Cloudflare KV。
+**交易很多的账号（几千笔以上）**
+Cloudflare 免费版每次请求最多调用 50 次外部接口，一次最多读 4,500 笔交易。为此网站把每个项目的交易（只存金额、手续费、币种、类型、时间）保存在 D1 数据库里：第一次读不完的部分，由下一次访问或每 3 小时的定时任务接着读，补齐后每次只读新增的交易。补齐前页面会提示 "Older transactions are not included yet"。
 
 **改了 `PUBLIC_STRIPE_VERIFY_KEYS` 后数字没变**
 收入数据在 Cloudflare 边缘缓存 6 小时，等缓存过期即可。页面上显示的 Key 是实时从接口读取的，改完马上生效。

@@ -1,6 +1,6 @@
 // Cloudflare Worker entry. Static files are served by the assets binding;
 // this only handles /api/* (see run_worker_first in wrangler.jsonc) and the X sync cron.
-import { onRequestGet as revenue } from "../functions/api/revenue.js";
+import { onRequestGet as revenue, refreshRevenue } from "../functions/api/revenue.js";
 import { guestbook } from "./guestbook.js";
 import { syncX } from "./x-sync.js";
 
@@ -30,6 +30,7 @@ export default {
 
   // Cron Trigger (see "triggers" in wrangler.jsonc)
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(syncX(env));
+    // Run one after the other: they share this invocation's outgoing-request limit.
+    ctx.waitUntil(syncX(env).catch((e) => console.error("x sync", e)).then(() => refreshRevenue(env, { budget: 35 })));
   },
 };

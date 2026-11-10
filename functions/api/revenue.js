@@ -13,8 +13,11 @@
 // (functions/_lib/revenue.mjs === stripe-revenue-verifier/revenue.mjs).
 
 import { aggregate, fetchAllBalanceTransactions, isForbidden } from "../_lib/revenue.mjs";
+import { syncTransactions } from "../../worker/revenue-store.js";
 
 const CACHE_SECONDS = 6 * 60 * 60;
+// While a large history is still being copied into D1, let the next visitor continue soon.
+const PARTIAL_CACHE_SECONDS = 60;
 // Cloudflare's free plan allows 50 sub-requests per request: 2 permission checks + up to 45 pages.
 const MAX_PAGES = 45;
 
@@ -56,7 +59,10 @@ export async function onRequestGet({ request, env, waitUntil }) {
     if (!noCharges || !noCustomers) {
       return json({ ...meta, error: "This project's key can read customer data. Replace it with a Balance-only key." }, 500);
     }
-    const { transactions, complete } = await fetchAllBalanceTransactions(project.key, { maxPages: MAX_PAGES });
+    // With D1 (the Worker's DB binding) history is kept between runs; without it, read what fits.
+    const { transactions, complete } = env.DB
+      ? await syncTransactions(env.DB, project.key, { maxPages: MAX_PAGES })
+      : await fetchAllBalanceTransactions(project.key, { maxPages: MAX_PAGES });
     const body = {
       ...meta,
       verifyKey: project.key,
@@ -65,7 +71,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
       transactionCount: transactions.length,
       ...aggregate(transactions),
     };
-    const res = json(body, 200, { "Cache-Control": `public, max-age=${CACHE_SECONDS}` });
+    const res = json(body, 200, { "Cache-Control": `public, max-age=${complete ? CACHE_SECONDS : PARTIAL_CACHE_SECONDS}` });
     waitUntil(cache.put(cacheKey, res.clone()));
     return res;
   } catch (err) {
@@ -82,4 +88,25 @@ function json(data, status = 200, headers = {}) {
       ...headers,
     },
   });
+}
+
+// Cron: keep every project's stored history up to date (and finish large backfills)
+// without waiting for a visitor. Projects share this invocation's request budget.
+export async function refreshRevenue(env, { budget = MAX_PAGES, log = console.log } = {}) {
+  if (!env.DB) return;
+  for (const p of parseProjects(env)) {
+    if (budget <= 2) break;
+    try {
+      budget -= 1;
+      if (!(await isForbidden(p.key, "/charges"))) {
+        log(`revenue: skipped ${p.label}, key can read charges`);
+        continue;
+      }
+      const { complete, pagesUsed } = await syncTransactions(env.DB, p.key, { maxPages: budget });
+      budget -= pagesUsed;
+      log(`revenue: ${p.label} synced (${pagesUsed} pages, ${complete ? "complete" : "partial"})`);
+    } catch (err) {
+      log(`revenue: ${p.label} failed: ${err.message}`);
+    }
+  }
 }
