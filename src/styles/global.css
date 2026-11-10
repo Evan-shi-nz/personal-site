@@ -66,7 +66,7 @@ th { color: var(--muted); font-weight: 500; }
 .site-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
 .site-header .home { font-weight: 700; text-decoration: none; }
 .site-header nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; }
-.site-header nav a { text-decoration: none; color: var(--muted); }
+.site-header nav a { text-decoration: none; color: var(--muted); padding: 9px 0; margin: -9px 0; }
 .site-header nav a[aria-current="page"], .site-header nav a:hover { color: var(--fg); }
 
 /* Home */
@@ -108,7 +108,7 @@ button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .bars span { flex: 1; background: var(--fg); border-radius: 3px 3px 0 0; min-height: 2px; }
 
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 28px 0 8px; font-size: 15px; }
-.pager a { text-decoration: none; }
+.pager a { text-decoration: none; padding: 8px 0; }
 .post-nav { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 40px; align-items: stretch; }
 .post-nav a { display: flex; flex-direction: column; gap: 2px; max-width: 48%; }
 .post-nav a.older { text-align: right; margin-left: auto; }
