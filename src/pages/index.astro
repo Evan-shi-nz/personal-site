@@ -5,9 +5,23 @@ import PostList from "../components/PostList.astro";
 import NoteCard from "../components/NoteCard.astro";
 import { site } from "../site.config";
 import { getPosts, getNotes } from "../lib/content";
+import ielts from "../data/ielts.json";
+import journey from "../data/journey.json";
 
-const posts = (await getPosts()).slice(0, 6);
+const posts = (await getPosts()).slice(0, 5);
 const notes = (await getNotes()).slice(0, 3);
+
+type Mock = { date: string; listening: number; reading: number; writing: number; speaking: number };
+const mocks = (ielts.mocks as Mock[]).slice().sort((a, b) => a.date.localeCompare(b.date));
+const latest = mocks.at(-1);
+// IELTS overall band: average of the four skills, rounded to the nearest half band.
+const overall = (m: Mock) => Math.round(((m.listening + m.reading + m.writing + m.speaking) / 4) * 2) / 2;
+const skills = latest
+  ? ([["Listening", latest.listening], ["Reading", latest.reading], ["Writing", latest.writing], ["Speaking", latest.speaking]] as const)
+  : [];
+const nextStep = journey.findIndex((s) => !s.done);
+const monthLabel = (ym: string) =>
+  ym ? new Date(`${ym}-01T00:00:00Z`).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
 ---
 <Base>
   <section class="intro">
@@ -19,16 +33,66 @@ const notes = (await getNotes()).slice(0, 3);
   </section>
   <Social />
 
+  <a class="card rev-card" href="/revenue" id="rev-mini" data-currency={site.revenue.currency} data-rates={JSON.stringify(site.revenue.rates)} hidden>
+    <div class="rev-row">
+      <div>
+        <div class="small muted">Revenue, last 30 days</div>
+        <div><strong class="rev-value" id="rev-mini-value"></strong> <span class="small" id="rev-mini-change"></span></div>
+      </div>
+      <span class="small ok">✓ Verified on TrustMRR</span>
+    </div>
+    <svg class="rev-bars" id="rev-mini-bars" viewBox="0 0 300 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <span class="small muted">See all projects →</span>
+  </a>
+
   <h2>Now</h2>
   <ul>
     {site.now.map((item) => <li>{item}</li>)}
   </ul>
 
-  <a class="rev-mini" href="/revenue" id="rev-mini" data-rates={JSON.stringify(site.revenue.rates)} hidden>
-    <span class="small muted">Revenue, last 30 days</span>
-    <strong id="rev-mini-value"></strong>
-    <span class="small ok">✓ Verified on TrustMRR →</span>
-  </a>
+  <div class="two">
+    <section class="card" aria-labelledby="ielts-h">
+      <h2 id="ielts-h" class="card-h">IELTS</h2>
+      <p class="small muted">
+        Preparing for {ielts.test}{ielts.target && <> · <span class="nowrap">target <strong>{ielts.target}</strong></span></>}
+      </p>
+      {ielts.testDate ? (
+        <p class="small">Test day: <time datetime={ielts.testDate} id="ielts-date">{ielts.testDate}</time> <span class="muted" id="ielts-countdown"></span></p>
+      ) : (
+        <p class="small muted">Test date not booked yet.</p>
+      )}
+      {latest ? (
+        <>
+          <p class="small muted">Latest practice test · {latest.date} · <span class="nowrap">overall <strong>{overall(latest)}</strong></span></p>
+          <ul class="bands">
+            {skills.map(([name, score]) => (
+              <li>
+                <span>{name}</span>
+                <span class="band-bar"><span style={`width:${(score / 9) * 100}%`}></span></span>
+                <strong>{score}</strong>
+              </li>
+            ))}
+          </ul>
+          {mocks.length > 1 && <p class="small muted">{mocks.length} practice tests so far.</p>}
+        </>
+      ) : (
+        <p class="small muted">No practice test yet. Scores will show up here.</p>
+      )}
+    </section>
+
+    <section class="card" aria-labelledby="journey-h">
+      <h2 id="journey-h" class="card-h">Journey to New Zealand</h2>
+      <ol class="timeline">
+        {journey.map((step, i) => (
+          <li class:list={[{ done: step.done, next: i === nextStep }]}>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="t">{step.title}{i === nextStep && <span class="tag">Next</span>}</span>
+            {step.date && <span class="d muted">{monthLabel(step.date)}</span>}
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
 
   <h2>Writing</h2>
   <PostList posts={posts} />
@@ -42,39 +106,127 @@ const notes = (await getNotes()).slice(0, 3);
     </>
   )}
 
+  <section id="gh" hidden>
+    <h2>Code</h2>
+    <div class="card gh-card">
+      <div class="gh-grid-wrap"><svg id="gh-grid" role="img" aria-label="GitHub contributions in the last year"></svg></div>
+      <p class="small muted"><span id="gh-total"></span> · <a id="gh-link" target="_blank" rel="noopener noreferrer">GitHub ↗</a></p>
+    </div>
+  </section>
+
   <p class="small muted" style="margin-top:32px">Have a question or just want to say hi? <a href="/guestbook">Leave a message</a>.</p>
 </Base>
 
 <style>
-  .rev-mini { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; text-decoration: none; color: var(--fg); margin-top: 4px; }
-  .rev-mini:hover { border-color: var(--fg); }
-  .rev-mini strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+  .card { display: block; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .card-h { margin: 0 0 6px; font-size: 1.05rem; }
+  .card p { margin: 4px 0; }
+  .nowrap { white-space: nowrap; }
+  a.card { text-decoration: none; color: var(--fg); }
+  a.card:hover { border-color: var(--fg); }
+
+  .rev-card { margin: 28px 0 8px; }
+  .rev-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px 16px; flex-wrap: wrap; }
+  .rev-value { font-size: 1.6rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  :global(#rev-mini-change .up) { color: var(--good); font-weight: 600; }
+  :global(#rev-mini-change .down) { color: #d4483b; font-weight: 600; }
+  .rev-bars { display: block; width: 100%; height: 48px; margin: 10px 0 6px; }
+  :global(.rev-bars rect) { fill: var(--fg); }
+  :global(.rev-bars rect.zero) { fill: var(--line); }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 40px; }
+  .two > .card { min-width: 0; }
+  .bands { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .bands li { display: grid; grid-template-columns: 76px 1fr 28px; align-items: center; gap: 8px; }
+  .bands strong { text-align: right; font-variant-numeric: tabular-nums; }
+  .band-bar { height: 6px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+  .band-bar span { display: block; height: 100%; background: var(--fg); border-radius: 99px; }
+
+  .timeline { list-style: none; padding: 0; margin: 8px 0 0; font-size: 14.5px; }
+  .timeline li { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 0 0 12px 22px; }
+  .timeline li:last-child { padding-bottom: 0; }
+  .timeline li::before { content: ""; position: absolute; left: 5px; top: 14px; bottom: -2px; width: 2px; background: var(--line); }
+  .timeline li:last-child::before { display: none; }
+  .timeline .dot { position: absolute; left: 0; top: 5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
+  .timeline li.done .dot { background: var(--good); border-color: var(--good); }
+  .timeline li.next .dot { border-color: var(--fg); }
+  .timeline li:not(.done) .t { color: var(--muted); }
+  .timeline li.next .t { color: var(--fg); font-weight: 600; }
+  .timeline .d { font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--fg); color: var(--bg); vertical-align: 1px; }
+
+  .gh-card { padding-bottom: 10px; }
+  .gh-grid-wrap { overflow-x: auto; }
+  #gh-grid { display: block; }
+  :global(#gh-grid rect) { rx: 2px; }
 </style>
 
 <script>
-  // Last-30-day revenue of all projects in US dollars; stays hidden until projects are connected.
+  import { formatMoney, loadProjects, percentChange, rangeKeys, sumKeys } from "../lib/revenue-client";
+
+  // ---- Revenue: last 30 days across all projects ----
+  (async () => {
+    const card = document.getElementById("rev-mini")!;
+    try {
+      const cur = card.dataset.currency!;
+      const projects = (await loadProjects(cur, JSON.parse(card.dataset.rates!))).filter((p) => !p.error);
+      const { unit, current, previous } = rangeKeys("30d");
+      const now = projects.reduce((a, p) => a + sumKeys(p, unit, current), 0);
+      if (now <= 0) return;
+      const before = projects.reduce((a, p) => a + sumKeys(p, unit, previous), 0);
+      const pct = before * 100 < now ? null : percentChange(now, before);
+      document.getElementById("rev-mini-value")!.textContent = formatMoney(now, cur);
+      document.getElementById("rev-mini-change")!.innerHTML =
+        pct === null ? "" : `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span>`;
+      const perDay = current.map((k) => projects.reduce((a, p) => a + (p.days[k] ?? 0), 0));
+      const max = Math.max(1, ...perDay);
+      const w = 300 / perDay.length;
+      document.getElementById("rev-mini-bars")!.innerHTML = perDay
+        .map((v, i) => {
+          const h = v > 0 ? Math.max(2, (v / max) * 48) : 2;
+          return `<rect class="${v ? "" : "zero"}" x="${i * w + 1}" y="${48 - h}" width="${w - 2}" height="${h}" rx="1.5"></rect>`;
+        })
+        .join("");
+      card.hidden = false;
+    } catch {}
+  })();
+
+  // ---- IELTS countdown ----
+  const dateEl = document.getElementById("ielts-date");
+  if (dateEl) {
+    const d = new Date(dateEl.getAttribute("datetime") + "T00:00:00");
+    dateEl.textContent = d.toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" });
+    const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+    document.getElementById("ielts-countdown")!.textContent = days > 0 ? `· in ${days} day${days > 1 ? "s" : ""}` : days === 0 ? "· today" : "· done";
+  }
+
+  // ---- GitHub contribution calendar ----
   (async () => {
     try {
-      const card = document.getElementById("rev-mini")!;
-      const rates: Record<string, number> = JSON.parse(card.dataset.rates!);
-      const { projects = [] } = await fetch("/api/revenue/projects").then((r) => r.json());
-      const data = await Promise.all(
-        projects.map((p: { id: string }) => fetch(`/api/revenue?project=${p.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)),
-      );
-      let usdCents = 0;
-      for (const d of data) {
-        if (!d || d.error) continue;
-        for (const [cur, b] of Object.entries(d.last30Days ?? {})) {
-          if (rates[cur]) usdCents += (b as { gross: number }).gross / rates[cur];
-        }
-      }
-      if (usdCents <= 0) return;
-      document.getElementById("rev-mini-value")!.textContent = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-      }).format(usdCents / 100);
-      card.hidden = false;
+      const res = await fetch("/api/github");
+      if (!res.ok) return;
+      const data: { total: number; url: string; days: { date: string; level: number; count: number | null }[] } = await res.json();
+      if (!data.days?.length) return;
+      const cell = 11, gap = 3;
+      const first = new Date(data.days[0].date + "T00:00:00Z").getUTCDay(); // 0 = Sunday, GitHub's first row
+      const cols = Math.ceil((data.days.length + first) / 7);
+      const svg = document.getElementById("gh-grid")!;
+      svg.setAttribute("width", String(cols * (cell + gap)));
+      svg.setAttribute("height", String(7 * (cell + gap)));
+      const shade = ["var(--soft)", "color-mix(in srgb, var(--good) 35%, var(--soft))", "color-mix(in srgb, var(--good) 60%, var(--soft))", "color-mix(in srgb, var(--good) 80%, var(--soft))", "var(--good)"];
+      svg.innerHTML = data.days
+        .map((d, i) => {
+          const pos = i + first;
+          const title = `${d.count ?? "Some"} contribution${d.count === 1 ? "" : "s"} on ${d.date}`;
+          return `<rect x="${Math.floor(pos / 7) * (cell + gap)}" y="${(pos % 7) * (cell + gap)}" width="${cell}" height="${cell}" fill="${shade[d.level] ?? shade[0]}"><title>${title}</title></rect>`;
+        })
+        .join("");
+      document.getElementById("gh-total")!.textContent = `${data.total.toLocaleString("en-US")} contributions in the last year`;
+      (document.getElementById("gh-link") as HTMLAnchorElement).href = data.url;
+      document.getElementById("gh").hidden = false;
+      // Show the most recent weeks first on narrow screens
+      const wrap = svg.parentElement!;
+      wrap.scrollLeft = wrap.scrollWidth;
     } catch {}
   })();
 </script>

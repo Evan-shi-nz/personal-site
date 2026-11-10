@@ -2,6 +2,7 @@
 import { newTab } from "../lib/links";
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
+import { RANGES } from "../lib/revenue-client";
 
 // Projects and numbers come from /api/revenue at runtime (Cloudflare secret STRIPE_REVENUE_KEYS),
 // so adding a project needs no rebuild. Keys never reach the browser.
@@ -10,315 +11,249 @@ const { currency, rates } = site.revenue;
 <Base title="Revenue" description="Evan Shi's revenue from small online products, read from Stripe and verified on TrustMRR.">
   <h1>Revenue</h1>
   <p class="muted">
-    I run small online products on my own. I don't name them here, but the revenue is real:
-    it is read straight from Stripe, and each project is independently verified on TrustMRR.
+    I run small online products on my own. I don't name them here, but the revenue is real and
+    each project is verified on <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>.
   </p>
 
   <section class="rev-card" id="rev" data-currency={currency} data-rates={JSON.stringify(rates)} aria-live="polite">
-    <div class="table-wrap">
-      <table class="rev-table">
-        <thead>
-          <tr>
-            <th scope="col">Project</th>
-            <th scope="col" class="num">Last 30 days</th>
-            <th scope="col" class="num chg">Change</th>
-            <th scope="col" class="num">All-time</th>
-            <th scope="col">Verified</th>
-          </tr>
-        </thead>
-        <tbody id="rev-rows">
-          <tr><td colspan="5" class="muted">Loading revenue from Stripe…</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="small muted note" id="rev-note"></p>
-
-    <div id="rev-chart" hidden>
-      <div class="chart-head">
-        <span class="small muted" id="chart-title"></span>
-        <div class="range-tabs" role="tablist" aria-label="Range">
-          <button type="button" role="tab" data-range="months" aria-selected="true">Monthly</button>
-          <button type="button" role="tab" data-range="days" aria-selected="false">Daily</button>
-        </div>
+    <div class="rev-top">
+      <div class="headline">
+        <div><span class="amount" id="rev-total">–</span> <span class="muted" id="rev-period">in the last 30 days</span></div>
+        <div class="small" id="rev-change"></div>
       </div>
-      <div id="chart-body"></div>
+      <label class="picker">
+        <span class="visually-hidden">Project</span>
+        <select id="rev-project" disabled>
+          <option value="all">All projects</option>
+        </select>
+      </label>
     </div>
-  </section>
 
-  <p class="small muted">
-    Each project is verified on <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>, which reads its revenue
-    directly from Stripe. Use the links in the table to check each one.
-  </p>
+    <div class="rev-bar">
+      <div class="range-tabs" role="tablist" aria-label="Time range">
+        {RANGES.map((r) => (
+          <button type="button" role="tab" data-range={r.key} aria-selected={r.key === "30d" ? "true" : "false"} title={r.long}>
+            {r.label}
+          </button>
+        ))}
+      </div>
+      <a id="rev-verify" class="verify" target="_blank" rel="noopener noreferrer" hidden>✓ Verified on TrustMRR ↗</a>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="rev-canvas" role="img" aria-label="Revenue chart"></canvas>
+      <p class="muted chart-empty" id="rev-empty">Loading revenue…</p>
+    </div>
+    <p class="small muted rev-note" id="rev-note"></p>
+  </section>
 </Base>
 
 <style>
-  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 6px 18px 16px; margin: 24px 0 8px; }
-  .rev-table { min-width: 520px; }
-  .rev-table th, :global(.rev-table td) { padding: 12px 12px 12px 0; }
-  :global(.rev-table .num) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  :global(.rev-table tbody tr[data-row]) { cursor: pointer; }
-  :global(.rev-table tbody tr[data-row]:hover td) { background: var(--soft); }
-  :global(.rev-table tbody tr[aria-selected="true"] td:first-child) { box-shadow: inset 3px 0 0 var(--fg); }
-  :global(.rev-table td:first-child), .rev-table th:first-child { padding-left: 10px; white-space: nowrap; }
-  :global(.rev-table tr.total td) { font-weight: 700; border-bottom: 2px solid var(--fg); }
-  :global(.rev-table .big) { font-size: 1.1rem; font-weight: 700; }
-  :global(.rev-table a.verify) { white-space: nowrap; font-size: 14px; }
-  :global(.delta.up) { color: var(--good); }
-  :global(.delta.down) { color: #d4483b; }
-  .note { margin: 10px 0 18px; }
-  /* Phones: drop the Change column so totals and TrustMRR links fit without scrolling */
-  @media (max-width: 560px) {
-    .rev-card { padding: 4px 12px 14px; }
-    .rev-table { min-width: 0; font-size: 15px; }
-    :global(.rev-table .chg) { display: none; }
-    .rev-table th, :global(.rev-table td) { padding: 10px 8px 10px 0; }
-    :global(.rev-table .big) { font-size: 1rem; }
-    :global(.rev-table a.verify) { font-size: 13px; }
+  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 12px; margin: 24px 0 8px; }
+  .rev-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .headline .amount { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .headline { min-width: 0; }
+  :global(#rev-change .up) { color: var(--good); font-weight: 600; }
+  :global(#rev-change .down) { color: #d4483b; font-weight: 600; }
+  .picker select {
+    font: inherit; font-size: 15px; color: var(--fg); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 7px 34px 7px 12px; max-width: 240px;
+    appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+    background-size: 5px 5px; background-repeat: no-repeat;
   }
-  .note:empty { display: none; }
-  :global(.chart-head) { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-  :global(.range-tabs) { display: inline-flex; gap: 4px; }
-  :global(.range-tabs button) { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 99px; }
-  :global(.range-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  :global(.chart) { position: relative; }
-  :global(.chart svg) { display: block; width: 100%; height: 170px; }
-  :global(.chart .bar) { fill: var(--fg); pointer-events: none; }
-  :global(.chart .bar.zero) { fill: var(--line); }
-  :global(.chart .hit:hover + .bar) { fill: var(--good); }
-  :global(.chart .grid) { stroke: var(--line); stroke-width: 1; }
-  :global(.axis) { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
-  :global(.tip) { position: absolute; top: 0; transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  :global(.ymax) { position: absolute; top: -2px; left: 0; font-size: 12px; color: var(--muted); background: var(--bg); padding-right: 4px; }
+  .picker select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .rev-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin: 16px 0 10px; }
+  .range-tabs { display: inline-flex; gap: 2px; background: var(--soft); border-radius: 10px; padding: 3px; }
+  .range-tabs button { background: transparent; color: var(--muted); border: 0; padding: 4px 11px; font-size: 13px; font-weight: 600; border-radius: 8px; }
+  .range-tabs button[aria-selected="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+  .verify { font-size: 14px; font-weight: 600; color: var(--good); text-decoration: none; }
+  .verify:hover { text-decoration: underline; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; }
+  .chart-empty[hidden] { display: none; }
+  .rev-note { margin: 10px 0 0; }
 </style>
 
 <script>
-  type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
-  type Currency = { total: Bucket; months: Record<string, Bucket>; days: Record<string, Bucket> };
-  type Project = { id: string; label: string; trustmrr?: string | null };
-  type Data = {
-    generatedAt?: string;
-    complete?: boolean;
-    currencies?: Record<string, Currency>;
-    last30Days?: Record<string, Bucket>;
-    previous30Days?: Record<string, Bucket>;
-    error?: string;
-  };
-  // One row of the table, already converted to the display currency (in cents)
-  type Row = {
-    id: string;
-    label: string;
-    trustmrr?: string | null;
-    last30: number;
-    prev30: number;
-    allTime: number;
-    months: Record<string, number>;
-    days: Record<string, number>;
-    error?: string;
-    complete: boolean;
-    unconverted: string[];
-    generatedAt?: string;
-  };
+  import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip, type TooltipItem } from "chart.js";
+  import { RANGES, formatMoney, loadProjects, percentChange, rangeKeys, sumKeys, type Project, type RangeKey } from "../lib/revenue-client";
+
+  Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
   const box = document.getElementById("rev")!;
   const CUR = box.dataset.currency!;
   const RATES: Record<string, number> = JSON.parse(box.dataset.rates!);
-  const API = "/api/revenue";
-  const $ = (id: string) => document.getElementById(id)!;
-  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-  const money = (cents: number, digits = 0) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: CUR.toUpperCase(), maximumFractionDigits: digits, minimumFractionDigits: digits }).format(cents / 100);
-  const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const money = (c: number, d = 0) => formatMoney(c, CUR, d);
+  // Distinct colours for stacked projects; the last one is for "Others".
+  const PALETTE = ["#2f6fed", "#f08c00", "#1d9a6c", "#d6336c", "#7048e8"];
+  const MAX_STACKED = 5;
 
-  // Amount in a currency's minor units -> display currency cents. null if no rate is configured.
-  function convert(minor: number, cur: string): number | null {
-    const rate = RATES[cur];
-    if (!rate) return null;
-    const major = zeroDecimal.has(cur) ? minor : minor / 100;
-    return Math.round((major / rate) * (RATES[CUR] ?? 1) * 100);
-  }
+  let projects: Project[] = []; // sorted: most revenue in the last 30 days first
+  let selected = "all";
+  let range: RangeKey = "30d";
+  let chart: Chart | null = null;
 
-  function toRow(p: Project, d: Data): Row {
-    const row: Row = { id: p.id, label: p.label, trustmrr: p.trustmrr, last30: 0, prev30: 0, allTime: 0, months: {}, days: {}, complete: d.complete !== false, unconverted: [], generatedAt: d.generatedAt };
-    if (d.error) return { ...row, error: d.error };
-    for (const [cur, c] of Object.entries(d.currencies ?? {})) {
-      if (c.total.gross <= 0) continue; // fee-only currency
-      if (convert(1, cur) === null) {
-        row.unconverted.push(cur.toUpperCase());
-        continue;
-      }
-      row.allTime += convert(c.total.gross, cur)!;
-      row.last30 += convert(d.last30Days?.[cur]?.gross ?? 0, cur)!;
-      row.prev30 += convert(d.previous30Days?.[cur]?.gross ?? 0, cur)!;
-      for (const [k, b] of Object.entries(c.months)) row.months[k] = (row.months[k] ?? 0) + convert(b.gross, cur)!;
-      for (const [k, b] of Object.entries(c.days ?? {})) row.days[k] = (row.days[k] ?? 0) + convert(b.gross, cur)!;
-    }
-    return row;
-  }
+  const css = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-  function totalRow(rows: Row[]): Row {
-    const ok = rows.filter((r) => !r.error);
-    const t: Row = { id: "total", label: "Total", last30: 0, prev30: 0, allTime: 0, months: {}, days: {}, complete: ok.every((r) => r.complete), unconverted: [] };
-    for (const r of ok) {
-      t.last30 += r.last30;
-      t.prev30 += r.prev30;
-      t.allTime += r.allTime;
-      for (const [k, v] of Object.entries(r.months)) t.months[k] = (t.months[k] ?? 0) + v;
-      for (const [k, v] of Object.entries(r.days)) t.days[k] = (t.days[k] ?? 0) + v;
-    }
-    return t;
-  }
-
-  function change(now: number, before: number) {
-    if (!before) return now ? `<span class="delta up">New</span>` : `<span class="muted">–</span>`;
-    const pct = ((now - before) / before) * 100;
-    return `<span class="delta ${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span>`;
-  }
-
-  function timeAgo(iso: string) {
-    const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (min < 1) return "just now";
-    if (min < 60) return `${min} min ago`;
-    const h = Math.round(min / 60);
-    return `${h} hour${h > 1 ? "s" : ""} ago`;
-  }
-
-  let rows: Row[] = [];
-  let total: Row;
-  let selected = "total";
-  let range: "months" | "days" = "months";
-
-  function renderTable() {
-    $("rev-rows").innerHTML = [total, ...rows]
-      .map((r) => {
-        const cls = r.id === "total" ? ' class="total"' : "";
-        const verify = r.trustmrr
-          ? `<a class="verify" href="${esc(r.trustmrr)}" target="_blank" rel="noopener noreferrer">TrustMRR ↗</a>`
-          : `<span class="muted">–</span>`;
-        if (r.error) {
-          return `<tr${cls}><td>${esc(r.label)}</td><td colspan="3" class="muted small">Couldn't load right now</td><td>${verify}</td></tr>`;
-        }
-        return `<tr${cls} data-row="${esc(r.id)}" tabindex="0" aria-selected="${r.id === selected}">
-          <td>${esc(r.label)}</td>
-          <td class="num big">${money(r.last30)}</td>
-          <td class="num chg">${change(r.last30, r.prev30)}</td>
-          <td class="num">${money(r.allTime)}</td>
-          <td>${r.id === "total" ? "" : verify}</td>
-        </tr>`;
-      })
-      .join("");
-
-    const notes = [`Revenue before fees, in ${CUR.toUpperCase()} (HK$7.80 = US$1). Select a row to see its chart.`];
-    const updated = rows.map((r) => r.generatedAt).filter(Boolean).sort()[0];
-    if (updated) notes.push(`Updated ${timeAgo(updated!)}.`);
-    if (!total.complete) notes.push("Older transactions of some projects are still being added.");
-    const skipped = [...new Set(rows.flatMap((r) => r.unconverted))];
-    if (skipped.length) notes.push(`Revenue in ${skipped.join(", ")} is not included (no exchange rate set).`);
-    $("rev-note").textContent = notes.join(" ");
-  }
-
-  function label(key: string) {
-    if (range === "months") {
+  function axisLabel(key: string, unit: "days" | "months") {
+    if (unit === "months") {
       const [y, m] = key.split("-").map(Number);
-      return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" });
+      return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-NZ", { month: "short", timeZone: "UTC" });
     }
     return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" });
   }
-
-  function renderChart() {
-    const r = selected === "total" ? total : rows.find((x) => x.id === selected) ?? total;
-    let series = Object.entries(range === "months" ? r.months : r.days).sort(([a], [b]) => a.localeCompare(b));
-    if (range === "months") series = series.slice(-24);
-    $("rev-chart").hidden = false;
-    $("chart-title").textContent = `${r.label}: revenue per ${range === "months" ? "month" : "day, last 90 days"}`;
-    document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.range === range)));
-    if (series.length === 0) {
-      $("chart-body").innerHTML = `<p class="muted small">No revenue yet.</p>`;
-      return;
+  function tooltipTitle(key: string, unit: "days" | "months") {
+    if (unit === "months") {
+      const [y, m] = key.split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-NZ", { month: "long", year: "numeric", timeZone: "UTC" });
     }
-    const W = 600, H = 170, gap = series.length > 40 ? 1 : 3;
-    const max = Math.max(1, ...series.map(([, v]) => v));
-    const bw = (W - gap * (series.length - 1)) / series.length;
-    const bars = series
-      .map(([, v], i) => {
-        const h = v > 0 ? Math.max(2, (v / max) * (H - 16)) : 2;
-        const x = i * (bw + gap);
-        return `<rect class="hit" x="${x}" y="0" width="${bw + gap}" height="${H}" fill="transparent" data-i="${i}"></rect><rect class="bar${v ? "" : " zero"}" x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 2)}"></rect>`;
-      })
-      .join("");
-    $("chart-body").innerHTML = `
-      <div class="chart" id="chart">
-        <span class="ymax">${money(max)}</span>
-        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(r.label)} revenue per ${range === "months" ? "month" : "day"}">
-          <line class="grid" x1="0" y1="${H - 0.5}" x2="${W}" y2="${H - 0.5}"></line>${bars}
-        </svg>
-        <div class="tip" id="tip" hidden></div>
-      </div>
-      <div class="axis"><span>${label(series[0][0])}</span><span>${label(series[series.length - 1][0])}</span></div>`;
-    const chart = $("chart"), tip = $("tip");
-    chart.querySelectorAll<SVGRectElement>(".hit").forEach((rect) => {
-      const show = () => {
-        const [k, v] = series[Number(rect.dataset.i)];
-        tip.textContent = `${label(k)} · ${money(v, 2)}`;
-        tip.hidden = false;
-        const rb = rect.getBoundingClientRect(), cb = chart.getBoundingClientRect();
-        const half = tip.offsetWidth / 2;
-        tip.style.left = `${Math.min(Math.max(rb.left - cb.left + rb.width / 2, half), cb.width - half)}px`;
-      };
-      rect.addEventListener("mouseenter", show);
-      rect.addEventListener("touchstart", show, { passive: true });
-    });
-    chart.addEventListener("mouseleave", () => (tip.hidden = true));
+    return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   }
 
-  function select(id: string) {
-    selected = id;
-    renderTable();
-    renderChart();
+  function render() {
+    const ok = projects.filter((p) => !p.error);
+    const shown = selected === "all" ? ok : ok.filter((p) => p.id === selected);
+    const { unit, current, previous } = rangeKeys(range);
+    const meta = RANGES.find((r) => r.key === range)!;
+
+    // Headline: total for the range and change against the period before.
+    const now = shown.reduce((a, p) => a + sumKeys(p, unit, current), 0);
+    const before = shown.reduce((a, p) => a + sumKeys(p, unit, previous), 0);
+    // A previous period with almost nothing in it (e.g. before the first sale) makes a percentage meaningless.
+    const pct = before * 100 < now ? null : percentChange(now, before);
+    $("rev-total").textContent = money(now);
+    $("rev-period").textContent = `in the ${meta.long}`;
+    $("rev-change").innerHTML =
+      pct === null
+        ? now ? `<span class="up">New</span>` : ""
+        : `<span class="${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="muted">vs previous ${meta.long.replace("last ", "")}</span>`;
+
+    // TrustMRR link for the selected project.
+    const one = selected === "all" ? null : ok.find((p) => p.id === selected);
+    const verify = $<HTMLAnchorElement>("rev-verify");
+    verify.hidden = !one?.trustmrr;
+    if (one?.trustmrr) verify.href = one.trustmrr;
+
+    // Datasets: one per project (top ones by revenue in this range), the rest as "Others".
+    const ranked = [...shown].sort((a, b) => sumKeys(b, unit, current) - sumKeys(a, unit, current));
+    const top = ranked.length > MAX_STACKED + 1 ? ranked.slice(0, MAX_STACKED) : ranked;
+    const rest = ranked.slice(top.length);
+    const single = shown.length === 1;
+    const datasets = top.map((p, i) => ({
+      label: p.label,
+      data: current.map((k) => ((unit === "days" ? p.days : p.months)[k] ?? 0) / 100),
+      backgroundColor: single ? css("--fg") : PALETTE[i % PALETTE.length],
+    }));
+    if (rest.length) {
+      datasets.push({
+        label: `Others (${rest.length})`,
+        data: current.map((k) => rest.reduce((a, p) => a + ((unit === "days" ? p.days : p.months)[k] ?? 0), 0) / 100),
+        backgroundColor: css("--muted"),
+      });
+    }
+
+    $("rev-empty").hidden = true;
+    const fg = css("--fg"), bg = css("--bg"), muted = css("--muted"), line = css("--line");
+    const config = {
+      type: "bar" as const,
+      data: { labels: current.map((k) => axisLabel(k, unit)), datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        interaction: { mode: "index" as const, intersect: false },
+        datasets: { bar: { borderRadius: 3, borderSkipped: false, categoryPercentage: 0.8, barPercentage: 0.9, maxBarThickness: 44 } },
+        scales: {
+          x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: muted, maxRotation: 0, autoSkip: true, maxTicksLimit: unit === "months" ? 12 : 8, font: { size: 12 } } },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: line },
+            border: { display: false, dash: [4, 4] },
+            ticks: { color: muted, maxTicksLimit: 5, font: { size: 12 }, callback: (v: string | number) => money(Number(v) * 100) },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: bg,
+            titleColor: fg,
+            bodyColor: fg,
+            footerColor: fg,
+            borderColor: line,
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 4,
+            usePointStyle: true,
+            titleFont: { weight: "bold" as const },
+            itemSort: (a: TooltipItem<"bar">, b: TooltipItem<"bar">) => (b.parsed.y ?? 0) - (a.parsed.y ?? 0),
+            filter: (item: TooltipItem<"bar">) => (item.parsed.y ?? 0) > 0,
+            callbacks: {
+              title: (items: TooltipItem<"bar">[]) => tooltipTitle(current[items[0].dataIndex], unit),
+              label: (item: TooltipItem<"bar">) => ` ${item.dataset.label}: ${money((item.parsed.y ?? 0) * 100, 2)}`,
+              footer: (items: TooltipItem<"bar">[]) =>
+                items.length > 1 ? `Total: ${money(items.reduce((a, i) => a + (i.parsed.y ?? 0), 0) * 100, 2)}` : "",
+            },
+          },
+        },
+      },
+    };
+    chart?.destroy();
+    chart = new Chart($<HTMLCanvasElement>("rev-canvas"), config);
+
+    // Note under the chart.
+    const notes = [`Revenue before fees, in ${CUR.toUpperCase()} (HK$7.80 = US$1).`];
+    if (ok.some((p) => !p.complete)) notes.push("Older transactions of some projects are still being added.");
+    const skipped = [...new Set(ok.flatMap((p) => p.unconverted))];
+    if (skipped.length) notes.push(`Revenue in ${skipped.join(", ")} is not included (no exchange rate set).`);
+    const failed = projects.filter((p) => p.error).map((p) => p.label);
+    if (failed.length) notes.push(`Couldn't load ${failed.join(", ")} right now.`);
+    $("rev-note").textContent = notes.join(" ");
   }
 
-  $("rev-rows").addEventListener("click", (ev) => {
-    if ((ev.target as HTMLElement).closest("a")) return; // let TrustMRR links open
-    const tr = (ev.target as HTMLElement).closest<HTMLTableRowElement>("tr[data-row]");
-    if (tr) select(tr.dataset.row!);
-  });
-  $("rev-rows").addEventListener("keydown", (ev) => {
-    const tr = (ev.target as HTMLElement).closest<HTMLTableRowElement>("tr[data-row]");
-    if (tr && (ev.key === "Enter" || ev.key === " ")) {
-      ev.preventDefault();
-      select(tr.dataset.row!);
-    }
+  function fillPicker() {
+    const select = $<HTMLSelectElement>("rev-project");
+    const ok = projects.filter((p) => !p.error);
+    select.innerHTML =
+      `<option value="all">All projects (${ok.length})</option>` +
+      ok.map((p) => `<option value="${p.id}">${p.label.replace(/[<&]/g, "")}</option>`).join("");
+    select.disabled = ok.length < 2;
+    if (ok.length === 1) selected = ok[0].id;
+    select.value = selected;
+  }
+
+  $("rev-project").addEventListener("change", (e) => {
+    selected = (e.target as HTMLSelectElement).value;
+    render();
   });
   document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) =>
     b.addEventListener("click", () => {
-      range = b.dataset.range as typeof range;
-      renderChart();
+      range = b.dataset.range as RangeKey;
+      document.querySelectorAll("[data-range]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      render();
     }),
   );
+  // Redraw with the right colours when the theme changes.
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => projects.length && render());
 
-  async function load() {
-    let projects: Project[] = [];
+  (async () => {
     try {
-      projects = (await fetch(`${API}/projects`).then((r) => r.json())).projects ?? [];
-    } catch {}
-    if (projects.length === 0) {
-      $("rev-rows").innerHTML = `<tr><td colspan="5" class="muted">Revenue will appear here once the projects are connected.</td></tr>`;
+      projects = await loadProjects(CUR, RATES);
+    } catch {
+      projects = [];
+    }
+    if (projects.filter((p) => !p.error).length === 0) {
+      $("rev-empty").textContent = projects.length ? "Couldn't load revenue right now." : "Revenue will appear here once projects are connected.";
       return;
     }
-    rows = await Promise.all(
-      projects.map(async (p) => {
-        try {
-          const res = await fetch(`${API}?project=${encodeURIComponent(p.id)}`);
-          const d: Data = await res.json();
-          return toRow(p, res.ok ? d : { ...d, error: d.error || `HTTP ${res.status}` });
-        } catch (err) {
-          return toRow(p, { error: String((err as Error).message) });
-        }
-      }),
-    );
-    total = totalRow(rows);
-    renderTable();
-    renderChart();
-  }
-
-  load();
+    // Biggest project first (by the last 30 days), so it reads as the main one.
+    const { unit, current } = rangeKeys("30d");
+    projects.sort((a, b) => sumKeys(b, unit, current) - sumKeys(a, unit, current));
+    fillPicker();
+    render();
+  })();
 </script>

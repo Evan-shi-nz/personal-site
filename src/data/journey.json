@@ -1,0 +1,8 @@
+[
+  { "date": "2025-11", "title": "First paying customer for my own product", "done": true },
+  { "date": "2026-11", "title": "Started preparing for IELTS Academic", "done": true },
+  { "date": "2026-11", "title": "Launched this website", "done": true },
+  { "date": "", "title": "Take the IELTS test", "done": false },
+  { "date": "", "title": "Apply for a New Zealand visa", "done": false },
+  { "date": "", "title": "Move to New Zealand", "done": false }
+]

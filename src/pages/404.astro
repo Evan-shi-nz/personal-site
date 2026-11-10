@@ -1,7 +1,38 @@
 ---
 import Base from "../layouts/Base.astro";
+import { site } from "../site.config";
+
+const links = [
+  ["/", "Home", "Who I am and what I'm working on"],
+  ["/blog", "Blog", "IELTS, moving to New Zealand, building products"],
+  ["/notes", "Notes", "Short updates, many from X"],
+  ["/revenue", "Revenue", "What my products earn"],
+  ["/cv", "CV", "My experience and skills"],
+  ["/guestbook", "Guestbook", "Leave me a message"],
+];
 ---
 <Base title="Page not found" noindex>
-  <h1>Page not found</h1>
-  <p>This page doesn't exist. Try the <a href="/">home page</a> or the <a href="/blog">blog</a>.</p>
+  <section class="nf">
+    <img src={site.avatar} alt="" width="88" height="88" />
+    <p class="code">404</p>
+    <h1>This page doesn't exist</h1>
+    <p class="muted">The link may be old, or the address may have a typo. One of these might be what you were after:</p>
+  </section>
+  <ul class="nf-links">
+    {links.map(([href, label, hint]) => (
+      <li>
+        <a href={href}><strong>{label}</strong><span class="muted small">{hint}</span></a>
+      </li>
+    ))}
+  </ul>
 </Base>
+
+<style>
+  .nf { text-align: center; margin: 24px 0 28px; }
+  .nf img { border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+  .nf .code { font-size: 14px; font-weight: 700; letter-spacing: 0.2em; color: var(--muted); margin: 14px 0 4px; }
+  .nf h1 { margin-bottom: 8px; }
+  .nf-links { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .nf-links a { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; height: 100%; }
+  .nf-links a:hover { border-color: var(--fg); }
+</style>

@@ -2,6 +2,7 @@
 // this only handles /api/* (see run_worker_first in wrangler.jsonc) and the X sync cron.
 import { onRequestGet as revenue, refreshRevenue } from "../functions/api/revenue.js";
 import { guestbook } from "./guestbook.js";
+import { github } from "./github.js";
 import { syncX } from "./x-sync.js";
 
 export default {
@@ -21,6 +22,14 @@ export default {
       } catch (err) {
         console.error("guestbook", err);
         return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+      }
+    }
+
+    if (pathname === "/api/github") {
+      try {
+        return await github(request, env, ctx);
+      } catch (err) {
+        return Response.json({ error: String(err.message || err) }, { status: 502 });
       }
     }
 
