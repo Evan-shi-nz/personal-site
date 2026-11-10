@@ -19,8 +19,9 @@
 import { aggregate, fetchAllBalanceTransactions, isForbidden } from "../_lib/revenue.mjs";
 import { syncTransactions } from "../../worker/revenue-store.js";
 
-const CACHE_SECONDS = 6 * 60 * 60;
-// While a large history is still being copied into D1, let the next visitor continue soon.
+// Read new transactions from Stripe at most every 12 hours.
+const CACHE_SECONDS = 12 * 60 * 60;
+// Only while a large history is first being copied into D1: let the next visit continue soon.
 const PARTIAL_CACHE_SECONDS = 60;
 // Cloudflare's free plan allows 50 sub-requests per request: 2 permission checks + up to 45 pages.
 const MAX_PAGES = 45;

@@ -16,8 +16,10 @@
   },
   // Guestbook storage. No database_id: wrangler creates the database on the first deploy.
   "d1_databases": [{ "binding": "DB", "database_name": "personal-site-guestbook" }],
-  // X sync: every 3 hours (UTC). Does nothing until X_BEARER_TOKEN and GITHUB_TOKEN are set.
-  "triggers": { "crons": ["23 */3 * * *"] },
+  // Cron Triggers (UTC), see scheduled() in worker/index.js:
+  //   every 3 hours:  sync posts from X (does nothing until X_BEARER_TOKEN and GITHUB_TOKEN are set)
+  //   every 12 hours: read new Stripe transactions for the revenue page
+  "triggers": { "crons": ["23 */3 * * *", "41 */12 * * *"] },
   "vars": {
     "X_USERNAME": "EvanShi_nz",
     "GITHUB_REPO": "Evan-shi-nz/personal-site",

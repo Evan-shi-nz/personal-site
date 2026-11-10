@@ -193,7 +193,7 @@ draft: false
 
 **A. 自动同步（Cloudflare 定时任务）**
 
-`wrangler.jsonc` 里配置了每 3 小时运行一次的 Cron Trigger。它从 X 读取新帖子，以一次提交的形式写进 GitHub 仓库，Cloudflare 随即自动重新部署。需要在 Worker → **设置 → 变量和机密** 里添加两个**机密（Secret）**：
+`wrangler.jsonc` 里配置了每 3 小时运行一次的 Cron Trigger（收入数据另有一个每 12 小时的）。它从 X 读取新帖子，以一次提交的形式写进 GitHub 仓库，Cloudflare 随即自动重新部署。需要在 Worker → **设置 → 变量和机密** 里添加两个**机密（Secret）**：
 
 | 名称 | 从哪里获取 |
 |---|---|
@@ -263,7 +263,7 @@ npm test
 ```
 访客浏览器 ──> /revenue 页面 ──> /api/revenue（Cloudflare Worker）──> Stripe API
                                        │
-                                       └─ 只返回汇总数字，缓存 6 小时
+                                       └─ 只返回汇总数字，每 12 小时更新一次
 
 任何人 ──> stripe-revenue-verifier（同一份计算代码）──> Stripe API ──> 对比结果
 ```
@@ -277,10 +277,10 @@ npm test
 ## 常见问题
 
 **交易很多的账号（几千笔以上）**
-Cloudflare 免费版每次请求最多调用 50 次外部接口，一次最多读 4,500 笔交易。为此网站把每个项目的交易（只存金额、手续费、币种、类型、时间）保存在 D1 数据库里：第一次读不完的部分，由下一次访问或每 3 小时的定时任务接着读，补齐后每次只读新增的交易。补齐前页面会提示 "Older transactions are not included yet"。
+Cloudflare 免费版每次请求最多调用 50 次外部接口，一次最多读 4,500 笔交易。为此网站把每个项目的交易（只存金额、手续费、币种、类型、时间）保存在 D1 数据库里：第一次读不完的部分，由下一次访问（导入期间每分钟可继续一次）或每 12 小时的定时任务接着读，补齐后每次只读新增的交易。补齐前页面会提示 "Older transactions are not included yet"。
 
 **改了 `STRIPE_REVENUE_KEYS` 后数字没变**
-收入数据在 Cloudflare 边缘缓存 6 小时，等缓存过期即可。页面上显示的 Key 是实时从接口读取的，改完马上生效。
+收入数据每 12 小时从 Stripe 更新一次，等下一次更新即可。
 
 **国内打不开网站**
 Cloudflare 在国内访问不稳定，但目标读者在海外，不影响。

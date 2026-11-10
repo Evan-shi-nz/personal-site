@@ -30,7 +30,10 @@ export default {
 
   // Cron Trigger (see "triggers" in wrangler.jsonc)
   async scheduled(controller, env, ctx) {
-    // Run one after the other: they share this invocation's outgoing-request limit.
-    ctx.waitUntil(syncX(env).catch((e) => console.error("x sync", e)).then(() => refreshRevenue(env, { budget: 35 })));
+    if (controller.cron === "41 */12 * * *") {
+      ctx.waitUntil(refreshRevenue(env));
+    } else {
+      ctx.waitUntil(syncX(env).catch((e) => console.error("x sync", e)));
+    }
   },
 };
