@@ -22,6 +22,8 @@
   ],
   // Keep the workers.dev address working too
   "workers_dev": true,
+  // `wrangler dev` would otherwise pretend requests come from http://evanshi.nz and hit the https redirect
+  "dev": { "host": "localhost" },
   // Guestbook storage. No database_id: wrangler creates the database on the first deploy.
   "d1_databases": [{ "binding": "DB", "database_name": "personal-site-guestbook" }],
   // Cron Triggers (UTC), see scheduled() in worker/index.js:
