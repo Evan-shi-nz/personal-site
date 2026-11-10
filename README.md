@@ -61,7 +61,7 @@ personal-site/
 | `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
 | `/guestbook` | 留言板 |
 | `/resume` | 英文简历，按钮可另存为 PDF |
-| `/revenue` | 收入仪表盘：可切换“全部项目 / 单个项目”，近 30 天、环比、累计、按天/按月图表、每个项目的验证方式（TrustMRR 链接或公开 Key） |
+| `/revenue` | 收入表格：合计 + 每个项目一行（近 30 天、环比、累计，统一换算成美元），每行链接到 TrustMRR 验证页；点击某一行显示它的按月/按天图表 |
 | `/admin` | 写作后台（不会被搜索引擎收录） |
 | `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 
@@ -133,14 +133,15 @@ Cloudflare 新版控制台默认创建的是 Workers，本项目已经配好了 
    | **密钥（Secret）** | `STRIPE_REVENUE_KEYS` | 每行一个项目，格式见下 |
 
    ```
-   Project 1=rk_live_第一个账号的Key | trustmrr=https://trustmrr.com/startup/你的项目
-   Project 2=rk_live_第二个账号的Key
+   Project 1=rk_live_第一个账号的Key | trustmrr=https://trustmrr.com/startup/private-enterprise-86
+   Project 2=rk_live_第二个账号的Key | trustmrr=https://trustmrr.com/startup/hidden-business-59
    ```
 
    - **Key 默认不公开**：只在服务器上用来计算，页面和接口只返回汇总数字（近 30 天、累计、每天/每月收入），不会返回 Key、提现记录、余额或交易说明。
    - `| trustmrr=网址`（可选）：这个项目旁边会显示 "Verified on TrustMRR ↗" 第三方验证链接。没有的话显示 "Read from Stripe"。
    - `| public`（可选）：在页面上公开这个项目的 Key 和验证命令，让访客自己核对。注意：公开的 Key 能看到全部交易记录，包括**提现记录和你手写的说明**。
-   - 显示名称可以随便起；以后新增网站，往下加一行即可，不需要改代码或重新部署。
+   - 显示名称（等号前面）就是表格里的项目名，可以随便改，比如 `Option 1`；以后新增网站，往下加一行即可，不需要改代码或重新部署。
+   - 金额统一换算成美元显示。汇率在 `src/site.config.ts` 的 `revenue.rates` 里（港币按 7.8）；新项目如果用其他币种收款，在那里加一个汇率。
    - 每个 Key 都必须**只开 Balance → Read**。能读取客户数据的 Key 会被网站拒绝。
    - 项目的顺序就是网址里的编号（第一行是 `?project=1`），调整顺序会改变编号。
    - 换了新 Key 后，这个项目的交易记录会重新读取一遍（记录按 Key 区分，数据库里不保存 Key 本身）。

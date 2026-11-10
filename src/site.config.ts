@@ -33,6 +33,9 @@ export const site = {
     "Running two small online products on my own",
     "Planning my move to New Zealand",
   ],
+  // Revenue page: everything is shown in this currency. Rates are units per 1 USD;
+  // the HKD rate is the Hong Kong dollar peg. Add a rate if a project earns in another currency.
+  revenue: { currency: "usd", rates: { usd: 1, hkd: 7.8 } as Record<string, number> },
   // Items per page
   pageSize: { blog: 10, notes: 20 },
 };

@@ -24,10 +24,10 @@ const notes = (await getNotes()).slice(0, 3);
     {site.now.map((item) => <li>{item}</li>)}
   </ul>
 
-  <a class="rev-mini" href="/revenue" id="rev-mini" hidden>
+  <a class="rev-mini" href="/revenue" id="rev-mini" data-rates={JSON.stringify(site.revenue.rates)} hidden>
     <span class="small muted">Revenue, last 30 days</span>
     <strong id="rev-mini-value"></strong>
-    <span class="small ok">✓ Verified with Stripe →</span>
+    <span class="small ok">✓ Verified on TrustMRR →</span>
   </a>
 
   <h2>Writing</h2>
@@ -52,26 +52,29 @@ const notes = (await getNotes()).slice(0, 3);
 </style>
 
 <script>
-  // Last-30-day revenue across all projects; stays hidden until the verification keys are connected.
+  // Last-30-day revenue of all projects in US dollars; stays hidden until projects are connected.
   (async () => {
     try {
+      const card = document.getElementById("rev-mini")!;
+      const rates: Record<string, number> = JSON.parse(card.dataset.rates!);
       const { projects = [] } = await fetch("/api/revenue/projects").then((r) => r.json());
       const data = await Promise.all(
         projects.map((p: { id: string }) => fetch(`/api/revenue?project=${p.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)),
       );
-      const totals: Record<string, number> = {};
+      let usdCents = 0;
       for (const d of data) {
         if (!d || d.error) continue;
-        for (const [cur, b] of Object.entries(d.last30Days ?? {})) totals[cur] = (totals[cur] ?? 0) + (b as { gross: number }).gross;
+        for (const [cur, b] of Object.entries(d.last30Days ?? {})) {
+          if (rates[cur]) usdCents += (b as { gross: number }).gross / rates[cur];
+        }
       }
-      const [cur, minor] = Object.entries(totals).sort((a, b) => b[1] - a[1])[0] ?? [];
-      if (!cur || !minor) return;
+      if (usdCents <= 0) return;
       document.getElementById("rev-mini-value")!.textContent = new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: cur.toUpperCase(),
+        currency: "USD",
         maximumFractionDigits: 0,
-      }).format(minor / 100);
-      document.getElementById("rev-mini")!.hidden = false;
+      }).format(usdCents / 100);
+      card.hidden = false;
     } catch {}
   })();
 </script>

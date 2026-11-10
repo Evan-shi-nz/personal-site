@@ -3,170 +3,193 @@ import { newTab } from "../lib/links";
 import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 
-// Projects, numbers and keys come from /api/revenue at runtime
-// (Cloudflare secret STRIPE_REVENUE_KEYS), so adding a project needs no rebuild.
-const apiUrl = new URL("/api/revenue", site.url).href;
+// Projects and numbers come from /api/revenue at runtime (Cloudflare secret STRIPE_REVENUE_KEYS),
+// so adding a project needs no rebuild. Keys never reach the browser.
+const { currency, rates } = site.revenue;
 ---
-<Base title="Revenue" description="Evan Shi's product revenue, read live from Stripe by open-source code.">
+<Base title="Revenue" description="Evan Shi's revenue from small online products, read from Stripe and verified on TrustMRR.">
   <h1>Revenue</h1>
   <p class="muted">
-    I run small online products. I don't name them here, but the money they make is real.
-    These numbers are read straight from Stripe by this site's <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>open-source code</a>.
+    I run small online products on my own. I don't name them here, but the revenue is real:
+    it is read straight from Stripe, and each project is independently verified on TrustMRR.
   </p>
 
-  <div class="proj-tabs" id="proj-tabs" role="tablist" aria-label="Project" hidden></div>
-
-  <section class="rev-card" aria-live="polite">
-    <div class="rev-head">
-      <span id="badge" hidden></span>
-      <div class="cur-tabs" id="cur-tabs" role="tablist" aria-label="Currency"></div>
-      <span class="small muted" id="updated"></span>
+  <section class="rev-card" id="rev" data-currency={currency} data-rates={JSON.stringify(rates)} aria-live="polite">
+    <div class="table-wrap">
+      <table class="rev-table">
+        <thead>
+          <tr>
+            <th scope="col">Project</th>
+            <th scope="col" class="num">Last 30 days</th>
+            <th scope="col" class="num chg">Change</th>
+            <th scope="col" class="num">All-time</th>
+            <th scope="col">Verified</th>
+          </tr>
+        </thead>
+        <tbody id="rev-rows">
+          <tr><td colspan="5" class="muted">Loading revenue from Stripe…</td></tr>
+        </tbody>
+      </table>
     </div>
+    <p class="small muted note" id="rev-note"></p>
 
-    <div id="rev-body">
-      <p class="muted">Loading numbers from Stripe…</p>
+    <div id="rev-chart" hidden>
+      <div class="chart-head">
+        <span class="small muted" id="chart-title"></span>
+        <div class="range-tabs" role="tablist" aria-label="Range">
+          <button type="button" role="tab" data-range="months" aria-selected="true">Monthly</button>
+          <button type="button" role="tab" data-range="days" aria-selected="false">Daily</button>
+        </div>
+      </div>
+      <div id="chart-body"></div>
     </div>
   </section>
 
-  <h2 id="verify">How these numbers are checked</h2>
-  <p>
-    Each project is read from its own Stripe account with a <strong>restricted key</strong> that has only
-    <code>Balance: Read</code> permission. It can see amounts and dates of transactions. It cannot see customers,
-    emails or products, and it cannot change anything. The key stays on the server.
-  </p>
-  <ul id="checks" class="checks"></ul>
-
-  <div id="verifier-help" hidden>
-    <h3>Check a public key yourself</h3>
-    <p>
-      <a href={site.repos.verifier} {...newTab}>stripe-revenue-verifier</a> is about 200 lines of dependency-free Node.js.
-      It confirms that the key <em>cannot</em> read customer data, adds up every transaction from Stripe and compares the
-      result with this page. Download it once, then run the command shown for the project:
-    </p>
-    <pre><code id="clone">git clone {site.repos.verifier}
-cd stripe-revenue-verifier</code></pre>
-    <button type="button" data-copy="clone">Copy commands</button>
-    <div id="keys"></div>
-  </div>
-
-  <h3>How the numbers are calculated</h3>
+  <h2>How these numbers are checked</h2>
   <ul>
-    <li><strong>Revenue</strong>: every successful payment, before fees (gross).</li>
-    <li><strong>Net</strong>: revenue minus refunds, disputes and Stripe fees.</li>
-    <li><strong>Change</strong>: the last 30 days compared with the 30 days before.</li>
-    <li>Payouts to my bank and transfers are not revenue and are left out.</li>
-    <li>Numbers refresh every 6 hours. This page and the verifier use <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>the same code</a>.</li>
+    <li>
+      <strong>Verified by a third party.</strong> Each project is connected to{" "}
+      <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>, which reads its revenue directly from Stripe.
+      Use the links in the table to see each one.
+    </li>
+    <li>
+      <strong>Read from Stripe.</strong> This page uses a read-only key per project that can see payment amounts and
+      dates only, never customers. The key stays on the server.
+    </li>
+    <li>
+      <strong>Revenue</strong> means successful payments before fees. <strong>Change</strong> compares the last 30 days
+      with the 30 days before. Other currencies are converted to US dollars at a fixed rate (HK$7.80 = US$1).
+    </li>
+    <li>
+      Numbers refresh every few hours, so they can differ slightly from TrustMRR. The calculation is{" "}
+      <a href={`${site.repos.site}/blob/main/functions/_lib/revenue.mjs`} {...newTab}>open source</a>.
+    </li>
   </ul>
 </Base>
 
 <style>
-  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px; margin: 12px 0 8px; }
-  .proj-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 24px; }
-  :global(.proj-tabs button) { background: transparent; color: var(--fg); border: 1px solid var(--line); padding: 6px 14px; font-size: 14px; border-radius: 10px; }
-  :global(.proj-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  :global(.proj-tabs button .amt) { opacity: 0.65; margin-left: 6px; font-variant-numeric: tabular-nums; }
-  :global(.key-item) { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }
-  :global(.key-item:first-child) { border-top: 0; padding-top: 4px; }
-  :global(.key-item .key-label) { font-weight: 600; }
-  :global(.key-item pre) { margin: 0; }
-  :global(.key-item .row) { display: flex; gap: 8px; flex-wrap: wrap; }
-  .rev-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 14px; }
-  .rev-head #updated { margin-left: auto; }
-  :global(.badge) { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 3px 10px 3px 8px; border-radius: 99px; text-decoration: none; }
-  :global(.badge.verified) { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
-  :global(a.badge.verified:hover) { background: color-mix(in srgb, var(--good) 20%, transparent); }
-  :global(.badge.plain) { color: var(--muted); background: var(--soft); }
-  :global(.checks) { padding-left: 20px; }
-  :global(.checks li) { margin-bottom: 6px; }
-  /* Tabs are created by the script below, so their styles must be global */
-  :global(.cur-tabs), :global(.range-tabs) { display: inline-flex; gap: 4px; }
-  :global(.cur-tabs button), :global(.range-tabs button) { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 99px; }
-  :global(.cur-tabs button[aria-selected="true"]), :global(.range-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  :global(.kpis) { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; margin-bottom: 18px; }
-  :global(.kpi .label) { font-size: 13px; color: var(--muted); }
-  :global(.kpi .value) { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.25; }
-  :global(.kpi .delta) { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rev-card { border: 1px solid var(--line); border-radius: 14px; padding: 6px 18px 16px; margin: 24px 0 8px; }
+  .rev-table { min-width: 520px; }
+  .rev-table th, :global(.rev-table td) { padding: 12px 12px 12px 0; }
+  :global(.rev-table .num) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  :global(.rev-table tbody tr[data-row]) { cursor: pointer; }
+  :global(.rev-table tbody tr[data-row]:hover td) { background: var(--soft); }
+  :global(.rev-table tbody tr[aria-selected="true"] td:first-child) { box-shadow: inset 3px 0 0 var(--fg); }
+  :global(.rev-table td:first-child), .rev-table th:first-child { padding-left: 10px; white-space: nowrap; }
+  :global(.rev-table tr.total td) { font-weight: 700; border-bottom: 2px solid var(--fg); }
+  :global(.rev-table .big) { font-size: 1.1rem; font-weight: 700; }
+  :global(.rev-table a.verify) { white-space: nowrap; font-size: 14px; }
   :global(.delta.up) { color: var(--good); }
   :global(.delta.down) { color: #d4483b; }
+  .note { margin: 10px 0 18px; }
+  /* Phones: drop the Change column so totals and TrustMRR links fit without scrolling */
+  @media (max-width: 560px) {
+    .rev-card { padding: 4px 12px 14px; }
+    .rev-table { min-width: 0; font-size: 15px; }
+    :global(.rev-table .chg) { display: none; }
+    .rev-table th, :global(.rev-table td) { padding: 10px 8px 10px 0; }
+    :global(.rev-table .big) { font-size: 1rem; }
+    :global(.rev-table a.verify) { font-size: 13px; }
+  }
+  .note:empty { display: none; }
   :global(.chart-head) { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  :global(.range-tabs) { display: inline-flex; gap: 4px; }
+  :global(.range-tabs button) { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 10px; font-size: 13px; border-radius: 99px; }
+  :global(.range-tabs button[aria-selected="true"]) { background: var(--fg); color: var(--bg); border-color: var(--fg); }
   :global(.chart) { position: relative; }
-  :global(.chart svg) { display: block; width: 100%; height: 180px; }
+  :global(.chart svg) { display: block; width: 100%; height: 170px; }
   :global(.chart .bar) { fill: var(--fg); pointer-events: none; }
   :global(.chart .bar.zero) { fill: var(--line); }
-  :global(.chart .hit:hover + .bar), :global(.chart .bar.active) { fill: var(--good); }
+  :global(.chart .hit:hover + .bar) { fill: var(--good); }
   :global(.chart .grid) { stroke: var(--line); stroke-width: 1; }
   :global(.axis) { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
   :global(.tip) { position: absolute; top: 0; transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
   :global(.ymax) { position: absolute; top: -2px; left: 0; font-size: 12px; color: var(--muted); background: var(--bg); padding-right: 4px; }
-  @media (max-width: 480px) { .rev-head #updated { margin-left: 0; width: 100%; } }
 </style>
-
 
 <script>
   type Bucket = { gross: number; refunds: number; disputes: number; fees: number; net: number; payments: number };
   type Currency = { total: Bucket; months: Record<string, Bucket>; days: Record<string, Bucket> };
-  type Project = { id: string; label: string; trustmrr?: string | null; verifiable?: boolean };
+  type Project = { id: string; label: string; trustmrr?: string | null };
   type Data = {
-    project?: Project;
-    verifyKey?: string;
-    generatedAt: string;
-    complete: boolean;
-    currencies: Record<string, Currency>;
-    last30Days: Record<string, Bucket>;
-    previous30Days: Record<string, Bucket>;
+    generatedAt?: string;
+    complete?: boolean;
+    currencies?: Record<string, Currency>;
+    last30Days?: Record<string, Bucket>;
+    previous30Days?: Record<string, Bucket>;
     error?: string;
   };
+  // One row of the table, already converted to the display currency (in cents)
+  type Row = {
+    id: string;
+    label: string;
+    trustmrr?: string | null;
+    last30: number;
+    prev30: number;
+    allTime: number;
+    months: Record<string, number>;
+    days: Record<string, number>;
+    error?: string;
+    complete: boolean;
+    unconverted: string[];
+    generatedAt?: string;
+  };
 
-  const API = new URL("/api/revenue", location.origin).href;
-  const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
-  const money = (minor: number, cur: string, digits = 0) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: cur.toUpperCase(),
-      maximumFractionDigits: digits,
-      minimumFractionDigits: digits,
-    }).format(zeroDecimal.has(cur) ? minor : minor / 100);
-  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  const box = document.getElementById("rev")!;
+  const CUR = box.dataset.currency!;
+  const RATES: Record<string, number> = JSON.parse(box.dataset.rates!);
+  const API = "/api/revenue";
   const $ = (id: string) => document.getElementById(id)!;
-  const empty = (): Bucket => ({ gross: 0, refunds: 0, disputes: 0, fees: 0, net: 0, payments: 0 });
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  const money = (cents: number, digits = 0) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: CUR.toUpperCase(), maximumFractionDigits: digits, minimumFractionDigits: digits }).format(cents / 100);
+  const zeroDecimal = new Set(["jpy", "krw", "vnd", "clp", "pyg", "ugx", "xaf", "xof"]);
 
-  let projects: Project[] = [];
-  const results = new Map<string, Data>(); // project id -> data (or error)
-  let selected = "all";
-  let currency = "";
-  let range: "days" | "months" = "days";
+  // Amount in a currency's minor units -> display currency cents. null if no rate is configured.
+  function convert(minor: number, cur: string): number | null {
+    const rate = RATES[cur];
+    if (!rate) return null;
+    const major = zeroDecimal.has(cur) ? minor : minor / 100;
+    return Math.round((major / rate) * (RATES[CUR] ?? 1) * 100);
+  }
 
-  // ---------- combining projects for "All projects" ----------
-  function addBucket(into: Bucket, b: Bucket) {
-    for (const k of Object.keys(into) as (keyof Bucket)[]) into[k] += b[k] ?? 0;
-  }
-  function addMap(into: Record<string, Bucket>, from: Record<string, Bucket> = {}) {
-    for (const [k, b] of Object.entries(from)) addBucket((into[k] ??= empty()), b);
-  }
-  function combine(list: Data[]): Data {
-    const out: Data = { generatedAt: "", complete: true, currencies: {}, last30Days: {}, previous30Days: {} };
-    for (const d of list) {
-      out.complete &&= d.complete;
-      if (!out.generatedAt || d.generatedAt < out.generatedAt) out.generatedAt = d.generatedAt;
-      for (const [cur, c] of Object.entries(d.currencies)) {
-        const t = (out.currencies[cur] ??= { total: empty(), months: {}, days: {} });
-        addBucket(t.total, c.total);
-        addMap(t.months, c.months);
-        addMap(t.days, c.days);
+  function toRow(p: Project, d: Data): Row {
+    const row: Row = { id: p.id, label: p.label, trustmrr: p.trustmrr, last30: 0, prev30: 0, allTime: 0, months: {}, days: {}, complete: d.complete !== false, unconverted: [], generatedAt: d.generatedAt };
+    if (d.error) return { ...row, error: d.error };
+    for (const [cur, c] of Object.entries(d.currencies ?? {})) {
+      if (c.total.gross <= 0) continue; // fee-only currency
+      if (convert(1, cur) === null) {
+        row.unconverted.push(cur.toUpperCase());
+        continue;
       }
-      addMap(out.last30Days, d.last30Days);
-      addMap(out.previous30Days, d.previous30Days);
+      row.allTime += convert(c.total.gross, cur)!;
+      row.last30 += convert(d.last30Days?.[cur]?.gross ?? 0, cur)!;
+      row.prev30 += convert(d.previous30Days?.[cur]?.gross ?? 0, cur)!;
+      for (const [k, b] of Object.entries(c.months)) row.months[k] = (row.months[k] ?? 0) + convert(b.gross, cur)!;
+      for (const [k, b] of Object.entries(c.days ?? {})) row.days[k] = (row.days[k] ?? 0) + convert(b.gross, cur)!;
     }
-    for (const c of Object.values(out.currencies)) {
-      c.months = Object.fromEntries(Object.entries(c.months).sort(([a], [b]) => a.localeCompare(b)));
-      c.days = Object.fromEntries(Object.entries(c.days).sort(([a], [b]) => a.localeCompare(b)));
-    }
-    return out;
+    return row;
   }
-  const okResults = () => projects.map((p) => results.get(p.id)).filter((d): d is Data => !!d && !d.error);
-  const current = (): Data | undefined => (selected === "all" ? combine(okResults()) : results.get(selected));
 
-  // ---------- small helpers ----------
+  function totalRow(rows: Row[]): Row {
+    const ok = rows.filter((r) => !r.error);
+    const t: Row = { id: "total", label: "Total", last30: 0, prev30: 0, allTime: 0, months: {}, days: {}, complete: ok.every((r) => r.complete), unconverted: [] };
+    for (const r of ok) {
+      t.last30 += r.last30;
+      t.prev30 += r.prev30;
+      t.allTime += r.allTime;
+      for (const [k, v] of Object.entries(r.months)) t.months[k] = (t.months[k] ?? 0) + v;
+      for (const [k, v] of Object.entries(r.days)) t.days[k] = (t.days[k] ?? 0) + v;
+    }
+    return t;
+  }
+
+  function change(now: number, before: number) {
+    if (!before) return now ? `<span class="delta up">New</span>` : `<span class="muted">–</span>`;
+    const pct = ((now - before) / before) * 100;
+    return `<span class="delta ${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span>`;
+  }
+
   function timeAgo(iso: string) {
     const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
     if (min < 1) return "just now";
@@ -174,11 +197,41 @@ cd stripe-revenue-verifier</code></pre>
     const h = Math.round(min / 60);
     return `${h} hour${h > 1 ? "s" : ""} ago`;
   }
-  function delta(now: number, before: number) {
-    if (!before) return now ? `<span class="delta up">New</span>` : `<span class="delta">–</span>`;
-    const pct = ((now - before) / before) * 100;
-    return `<span class="delta ${pct >= 0 ? "up" : "down"}">${pct >= 0 ? "↑" : "↓"} ${Math.abs(pct).toFixed(1)}%</span> <span class="small muted">vs previous 30 days</span>`;
+
+  let rows: Row[] = [];
+  let total: Row;
+  let selected = "total";
+  let range: "months" | "days" = "months";
+
+  function renderTable() {
+    $("rev-rows").innerHTML = [total, ...rows]
+      .map((r) => {
+        const cls = r.id === "total" ? ' class="total"' : "";
+        const verify = r.trustmrr
+          ? `<a class="verify" href="${esc(r.trustmrr)}" target="_blank" rel="noopener noreferrer">TrustMRR ↗</a>`
+          : `<span class="muted">–</span>`;
+        if (r.error) {
+          return `<tr${cls}><td>${esc(r.label)}</td><td colspan="3" class="muted small">Couldn't load right now</td><td>${verify}</td></tr>`;
+        }
+        return `<tr${cls} data-row="${esc(r.id)}" tabindex="0" aria-selected="${r.id === selected}">
+          <td>${esc(r.label)}</td>
+          <td class="num big">${money(r.last30)}</td>
+          <td class="num chg">${change(r.last30, r.prev30)}</td>
+          <td class="num">${money(r.allTime)}</td>
+          <td>${r.id === "total" ? "" : verify}</td>
+        </tr>`;
+      })
+      .join("");
+
+    const notes = [`All amounts in ${CUR.toUpperCase()}. Select a row to see its chart.`];
+    const updated = rows.map((r) => r.generatedAt).filter(Boolean).sort()[0];
+    if (updated) notes.push(`Updated ${timeAgo(updated!)}.`);
+    if (!total.complete) notes.push("Older transactions of some projects are still being added.");
+    const skipped = [...new Set(rows.flatMap((r) => r.unconverted))];
+    if (skipped.length) notes.push(`Revenue in ${skipped.join(", ")} is not included (no exchange rate set).`);
+    $("rev-note").textContent = notes.join(" ");
   }
+
   function label(key: string) {
     if (range === "months") {
       const [y, m] = key.split("-").map(Number);
@@ -186,231 +239,101 @@ cd stripe-revenue-verifier</code></pre>
     }
     return new Date(key + "T00:00:00Z").toLocaleDateString("en-NZ", { day: "numeric", month: "short", timeZone: "UTC" });
   }
-  // Currencies that ever had revenue, most active first: by the last 30 days, then all time.
-  // (Fee-only currencies, e.g. a settlement currency, are hidden.)
-  const currencyOrder = (d: Data) =>
-    Object.entries(d.currencies)
-      .filter(([, c]) => c.total.gross > 0)
-      .sort((a, b) => (d.last30Days[b[0]]?.gross ?? 0) - (d.last30Days[a[0]]?.gross ?? 0) || b[1].total.gross - a[1].total.gross)
-      .map(([k]) => k);
-  const mainCurrency = (d: Data) => currencyOrder(d)[0];
 
-  // ---------- chart ----------
-  function chart(series: [string, Bucket][], cur: string) {
-    if (series.length === 0) return `<p class="muted small">No data for this range yet.</p>`;
-    const W = 600, H = 180, gap = series.length > 40 ? 1 : 3;
-    const max = Math.max(1, ...series.map(([, b]) => b.gross));
+  function renderChart() {
+    const r = selected === "total" ? total : rows.find((x) => x.id === selected) ?? total;
+    let series = Object.entries(range === "months" ? r.months : r.days).sort(([a], [b]) => a.localeCompare(b));
+    if (range === "months") series = series.slice(-24);
+    $("rev-chart").hidden = false;
+    $("chart-title").textContent = `${r.label}: revenue per ${range === "months" ? "month" : "day, last 90 days"}`;
+    document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.range === range)));
+    if (series.length === 0) {
+      $("chart-body").innerHTML = `<p class="muted small">No revenue yet.</p>`;
+      return;
+    }
+    const W = 600, H = 170, gap = series.length > 40 ? 1 : 3;
+    const max = Math.max(1, ...series.map(([, v]) => v));
     const bw = (W - gap * (series.length - 1)) / series.length;
     const bars = series
-      .map(([, b], i) => {
-        const h = b.gross > 0 ? Math.max(2, (b.gross / max) * (H - 16)) : 2;
+      .map(([, v], i) => {
+        const h = v > 0 ? Math.max(2, (v / max) * (H - 16)) : 2;
         const x = i * (bw + gap);
-        return `<rect class="hit" x="${x}" y="0" width="${bw + gap}" height="${H}" fill="transparent" data-i="${i}"></rect><rect class="bar${b.gross ? "" : " zero"}" x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 2)}"></rect>`;
+        return `<rect class="hit" x="${x}" y="0" width="${bw + gap}" height="${H}" fill="transparent" data-i="${i}"></rect><rect class="bar${v ? "" : " zero"}" x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 2)}"></rect>`;
       })
       .join("");
-    return `
+    $("chart-body").innerHTML = `
       <div class="chart" id="chart">
-        <span class="ymax">${money(max, cur)}</span>
-        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Revenue per ${range === "days" ? "day" : "month"}">
+        <span class="ymax">${money(max)}</span>
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(r.label)} revenue per ${range === "months" ? "month" : "day"}">
           <line class="grid" x1="0" y1="${H - 0.5}" x2="${W}" y2="${H - 0.5}"></line>${bars}
         </svg>
         <div class="tip" id="tip" hidden></div>
       </div>
       <div class="axis"><span>${label(series[0][0])}</span><span>${label(series[series.length - 1][0])}</span></div>`;
-  }
-  function bindTooltip(series: [string, Bucket][], cur: string) {
-    const box = document.getElementById("chart");
-    if (!box) return;
-    const tip = $("tip");
-    box.querySelectorAll<SVGRectElement>(".hit").forEach((r) => {
+    const chart = $("chart"), tip = $("tip");
+    chart.querySelectorAll<SVGRectElement>(".hit").forEach((rect) => {
       const show = () => {
-        const [k, b] = series[Number(r.dataset.i)];
-        tip.textContent = `${label(k)} · ${money(b.gross, cur, 2)}${b.payments ? ` · ${b.payments} payment${b.payments > 1 ? "s" : ""}` : ""}`;
+        const [k, v] = series[Number(rect.dataset.i)];
+        tip.textContent = `${label(k)} · ${money(v, 2)}`;
         tip.hidden = false;
-        const rb = r.getBoundingClientRect(), cb = box.getBoundingClientRect();
+        const rb = rect.getBoundingClientRect(), cb = chart.getBoundingClientRect();
         const half = tip.offsetWidth / 2;
         tip.style.left = `${Math.min(Math.max(rb.left - cb.left + rb.width / 2, half), cb.width - half)}px`;
       };
-      r.addEventListener("mouseenter", show);
-      r.addEventListener("touchstart", show, { passive: true });
+      rect.addEventListener("mouseenter", show);
+      rect.addEventListener("touchstart", show, { passive: true });
     });
-    box.addEventListener("mouseleave", () => (tip.hidden = true));
+    chart.addEventListener("mouseleave", () => (tip.hidden = true));
   }
 
-  // ---------- rendering ----------
-  function renderProjectTabs() {
-    const tabs = $("proj-tabs");
-    if (projects.length < 2) return; // one project: no switcher needed
-    const items = [{ id: "all", label: "All projects" }, ...projects];
-    tabs.innerHTML = items
-      .map((p) => {
-        const d = p.id === "all" ? combine(okResults()) : results.get(p.id);
-        const cur = d && !d.error ? mainCurrency(d) : undefined;
-        const amt = cur ? `<span class="amt">${money(d!.last30Days[cur]?.gross ?? 0, cur)}</span>` : "";
-        return `<button type="button" role="tab" aria-selected="${p.id === selected}" data-project="${esc(p.id)}">${esc(p.label)}${amt}</button>`;
-      })
-      .join("");
-    tabs.hidden = false;
+  function select(id: string) {
+    selected = id;
+    renderTable();
+    renderChart();
   }
 
-  function renderCurrencyTabs(d: Data) {
-    const list = currencyOrder(d);
-    if (!list.includes(currency)) currency = list[0] ?? "";
-    $("cur-tabs").innerHTML =
-      list.length < 2
-        ? ""
-        : list.map((k) => `<button type="button" role="tab" aria-selected="${k === currency}" data-cur="${esc(k)}">${esc(k.toUpperCase())}</button>`).join("");
-  }
-
-  function render() {
-    renderProjectTabs();
-    const d = current();
-    const body = $("rev-body");
-    if (!d || d.error) {
-      $("badge").innerHTML = "";
-      $("updated").textContent = "";
-      $("cur-tabs").innerHTML = "";
-      const msg = d?.error ?? "No data yet.";
-      body.innerHTML = /not set/.test(msg)
-        ? `<p class="muted">Revenue numbers will appear here once the verification keys are connected.</p>`
-        : `<p class="muted">Couldn't load the numbers for this project (${esc(msg)}).</p>`;
-      return;
-    }
-    renderBadge();
-    $("updated").textContent = d.generatedAt ? `Updated ${timeAgo(d.generatedAt)}` : "";
-    renderCurrencyTabs(d);
-    if (!currency) {
-      body.innerHTML = `<p class="muted">No payments yet.</p>`;
-      return;
-    }
-    const c = d.currencies[currency];
-    const l30 = d.last30Days[currency] ?? empty();
-    const p30 = d.previous30Days?.[currency] ?? empty();
-    const series = (range === "days" ? Object.entries(c.days ?? {}) : Object.entries(c.months).slice(-24)) as [string, Bucket][];
-    body.innerHTML = `
-      <div class="kpis">
-        <div class="kpi"><div class="label">Revenue, last 30 days</div><div class="value">${money(l30.gross, currency)}</div>${delta(l30.gross, p30.gross)}</div>
-        <div class="kpi"><div class="label">All-time revenue</div><div class="value">${money(c.total.gross, currency)}</div><span class="small muted">${c.total.payments.toLocaleString("en-US")} payments</span></div>
-        <div class="kpi"><div class="label">All-time net</div><div class="value">${money(c.total.net, currency)}</div><span class="small muted">after refunds and fees</span></div>
-      </div>
-      <div class="chart-head">
-        <span class="small muted">Revenue per ${range === "days" ? "day, last 90 days" : "month"}</span>
-        <div class="range-tabs" role="tablist" aria-label="Range">
-          <button type="button" role="tab" data-range="days" aria-selected="${range === "days"}">Daily</button>
-          <button type="button" role="tab" data-range="months" aria-selected="${range === "months"}">Monthly</button>
-        </div>
-      </div>
-      ${chart(series, currency)}
-      ${d.complete ? "" : `<p class="small muted">Older transactions are not included yet.</p>`}`;
-    bindTooltip(series, currency);
-  }
-
-  const CHECK = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 0l2 1.6 2.5-.2.8 2.4 2.1 1.4-.8 2.4.8 2.4-2.1 1.4-.8 2.4-2.5-.2L8 16l-2-1.6-2.5.2-.8-2.4L.6 10.8l.8-2.4-.8-2.4 2.1-1.4.8-2.4 2.5.2z" fill="currentColor"/><path d="M5 8.2l2 2 4-4.2" stroke="var(--bg)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-  // "Verified on TrustMRR" only where a project really has a TrustMRR page; otherwise say what it is.
-  function renderBadge() {
-    const p = projects.find((x) => x.id === selected);
-    const badge = $("badge");
-    badge.hidden = false;
-    if (p?.trustmrr) {
-      badge.innerHTML = `<a class="badge verified" href="${esc(p.trustmrr)}" target="_blank" rel="noopener noreferrer">${CHECK} Verified on TrustMRR ↗</a>`;
-    } else if (p?.verifiable) {
-      badge.innerHTML = `<a class="badge verified" href="#verify">${CHECK} Public key, check it yourself</a>`;
-    } else {
-      badge.innerHTML = `<span class="badge plain">Read from Stripe</span>`;
-    }
-  }
-
-  function renderChecks() {
-    $("checks").innerHTML = projects
-      .map((p) => {
-        const how = p.trustmrr
-          ? `independently verified on <a href="${esc(p.trustmrr)}" target="_blank" rel="noopener noreferrer">TrustMRR ↗</a>`
-          : p.verifiable
-            ? `public key below, so you can <a href="#keys">check it yourself</a>`
-            : `read from Stripe by this site's open-source code`;
-        return `<li><strong>${esc(p.label)}</strong>: ${how}.</li>`;
-      })
-      .join("");
-  }
-
-  function renderKeys() {
-    const withKeys = projects.map((p) => ({ p, d: results.get(p.id) })).filter(({ d }) => d?.verifyKey?.startsWith("rk_"));
-    if (withKeys.length === 0) return;
-    $("verifier-help").hidden = false;
-    $("keys").innerHTML = withKeys
-      .map(
-        ({ p, d }) => `
-        <div class="key-item">
-          <span class="key-label">${esc(p.label)}</span>
-          <div class="key-box"><code id="key-${esc(p.id)}">${esc(d!.verifyKey!)}</code><button type="button" data-copy="key-${esc(p.id)}">Copy key</button></div>
-          <pre><code id="cmd-${esc(p.id)}">node verify.mjs ${esc(d!.verifyKey!)} --compare ${API}?project=${esc(p.id)}</code></pre>
-          <div class="row"><button type="button" data-copy="cmd-${esc(p.id)}">Copy command</button></div>
-        </div>`,
-      )
-      .join("");
-  }
-
-  // ---------- events (delegated, since most buttons are rendered by script) ----------
-  document.addEventListener("click", async (ev) => {
-    const btn = (ev.target as HTMLElement).closest<HTMLButtonElement>("button");
-    if (!btn) return;
-    if (btn.dataset.project) {
-      selected = btn.dataset.project;
-      render();
-    } else if (btn.dataset.cur) {
-      currency = btn.dataset.cur;
-      render();
-    } else if (btn.dataset.range) {
-      range = btn.dataset.range as typeof range;
-      render();
-    } else if (btn.dataset.copy) {
-      const el = $(btn.dataset.copy);
-      const text = btn.textContent;
-      try {
-        await navigator.clipboard.writeText(el.textContent ?? "");
-        btn.textContent = "Copied";
-      } catch {
-        const r = document.createRange();
-        r.selectNodeContents(el);
-        getSelection()?.removeAllRanges();
-        getSelection()?.addRange(r);
-        btn.textContent = "Selected, press Ctrl+C";
-      }
-      setTimeout(() => (btn.textContent = text), 2000);
+  $("rev-rows").addEventListener("click", (ev) => {
+    if ((ev.target as HTMLElement).closest("a")) return; // let TrustMRR links open
+    const tr = (ev.target as HTMLElement).closest<HTMLTableRowElement>("tr[data-row]");
+    if (tr) select(tr.dataset.row!);
+  });
+  $("rev-rows").addEventListener("keydown", (ev) => {
+    const tr = (ev.target as HTMLElement).closest<HTMLTableRowElement>("tr[data-row]");
+    if (tr && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      select(tr.dataset.row!);
     }
   });
+  document.querySelectorAll<HTMLButtonElement>("[data-range]").forEach((b) =>
+    b.addEventListener("click", () => {
+      range = b.dataset.range as typeof range;
+      renderChart();
+    }),
+  );
 
-  // ---------- loading ----------
   async function load() {
+    let projects: Project[] = [];
     try {
-      const res = await fetch(`${API}/projects`);
-      projects = (await res.json()).projects ?? [];
-    } catch {
-      projects = [];
-    }
+      projects = (await fetch(`${API}/projects`).then((r) => r.json())).projects ?? [];
+    } catch {}
     if (projects.length === 0) {
-      results.set("none", { error: "STRIPE_REVENUE_KEYS is not set" } as Data);
-      selected = "none";
-      render();
+      $("rev-rows").innerHTML = `<tr><td colspan="5" class="muted">Revenue will appear here once the projects are connected.</td></tr>`;
       return;
     }
-    if (projects.length === 1) selected = projects[0].id;
-    await Promise.all(
+    rows = await Promise.all(
       projects.map(async (p) => {
         try {
           const res = await fetch(`${API}?project=${encodeURIComponent(p.id)}`);
           const d: Data = await res.json();
-          results.set(p.id, res.ok ? d : { ...d, error: d.error || `HTTP ${res.status}` });
+          return toRow(p, res.ok ? d : { ...d, error: d.error || `HTTP ${res.status}` });
         } catch (err) {
-          results.set(p.id, { error: String((err as Error).message) } as Data);
+          return toRow(p, { error: String((err as Error).message) });
         }
       }),
     );
-    if (selected === "all" && okResults().length === 0) selected = projects[0].id; // show the error of the first project
-    render();
-    renderChecks();
-    renderKeys();
+    total = totalRow(rows);
+    renderTable();
+    renderChart();
   }
 
   load();
