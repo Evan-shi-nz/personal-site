@@ -30,6 +30,13 @@ export const site = {
     site: "https://github.com/Evan-shi-nz/personal-site",
     verifier: "https://github.com/Evan-shi-nz/stripe-revenue-verifier",
   },
+  // "Open to work" card at the top of the home page and a badge under the name. Set enabled: false to hide.
+  openToWork: {
+    enabled: true,
+    badge: "Open to work in New Zealand",
+    title: "Hiring in New Zealand?",
+    text: "I'm looking for a Software Engineer or Senior Software Engineer role in New Zealand. If your team is hiring, or you know of an opening, I'd love to hear from you. Even a quick tip or an introduction would mean a lot. Thank you!",
+  },
   // Shown on the home page; keep it short and current
   now: [
     "Preparing for the IELTS Academic test",
