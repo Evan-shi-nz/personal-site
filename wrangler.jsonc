@@ -35,7 +35,7 @@
     "GITHUB_REPO": "Evan-shi-nz/personal-site",
     "GITHUB_BRANCH": "main",
     // Mirror for visitors in mainland China, e.g. "https://cn.evanshi.nz". Empty = off. See deploy/cn-mirror.
-    "CN_MIRROR": ""
+    "CN_MIRROR": "https://cn.evanshi.nz"
   },
   // Keep variables and secrets set in the dashboard (PUBLIC_STRIPE_VERIFY_KEY, tokens) across deploys
   "keep_vars": true,
