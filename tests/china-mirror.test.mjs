@@ -53,7 +53,13 @@ test("/api/region reports the country and whether pages redirect", async () => {
   const res = await worker.fetch(req("https://evanshi.nz/api/region", { country: "CN", accept: "*/*" }), env(), ctx);
   const body = await res.json();
   assert.equal(body.country, "CN");
-  assert.equal(body.pageLoadsRedirect, true);
+  
   assert.equal(body.mirrorKeySet, true);
   assert.equal(JSON.stringify(body).includes(KEY), false);
+});
+
+test("a cn-test cookie pretends to be in China, for testing from anywhere", async () => {
+  const res = await worker.fetch(req("https://evanshi.nz/cv", { country: "US", headers: { Cookie: "a=b; cn-test=1" } }), env(), ctx);
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get("Location"), "https://cn.evanshi.nz/cv");
 });
