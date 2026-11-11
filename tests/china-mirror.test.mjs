@@ -48,3 +48,12 @@ test("the visitor's real IP is trusted only with the right key", () => {
   assert.equal(clientIp(h({}), env()), "203.0.113.9");
   assert.equal(clientIp(h({ "X-Mirror-Key": "" }), env({ CN_MIRROR_KEY: "" })), "203.0.113.9");
 });
+
+test("/api/region reports the country and whether pages redirect", async () => {
+  const res = await worker.fetch(req("https://evanshi.nz/api/region", { country: "CN", accept: "*/*" }), env(), ctx);
+  const body = await res.json();
+  assert.equal(body.country, "CN");
+  assert.equal(body.pageLoadsRedirect, true);
+  assert.equal(body.mirrorKeySet, true);
+  assert.equal(JSON.stringify(body).includes(KEY), false);
+});

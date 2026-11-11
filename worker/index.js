@@ -4,7 +4,7 @@ import { onRequestGet as revenue, refreshRevenue } from "../functions/api/revenu
 import { guestbook } from "./guestbook.js";
 import { github } from "./github.js";
 import { syncX } from "./x-sync.js";
-import { chinaRedirect } from "./china-mirror.js";
+import { chinaRedirect, regionInfo } from "./china-mirror.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -29,6 +29,9 @@ export default {
       }
       return revenue({ request, env, waitUntil: (p) => ctx.waitUntil(p) });
     }
+
+    // Shows where Cloudflare thinks the visitor is, to check the China redirect
+    if (pathname === "/api/region") return Response.json(regionInfo(request, env), { headers: { "Cache-Control": "no-store" } });
 
     if (pathname === "/api/guestbook") {
       try {

@@ -44,3 +44,17 @@ export function chinaRedirect(request, env) {
   if (target.host === url.host) return null;
   return new Response(null, { status: 302, headers: { Location: target.toString(), "Cache-Control": "private, no-store" } });
 }
+
+/** What the redirect decides for this visitor (shown at /api/region). */
+export function regionInfo(request, env) {
+  const country = request.cf?.country ?? null;
+  const mirror = (env.CN_MIRROR || "").trim() || null;
+  return {
+    country,
+    cloudflareDataCenter: request.cf?.colo ?? null,
+    mirror,
+    mirrorKeySet: typeof env.CN_MIRROR_KEY === "string" && env.CN_MIRROR_KEY.length >= 16,
+    viaMirror: fromMirror(request, env),
+    pageLoadsRedirect: Boolean(mirror) && country === "CN",
+  };
+}
