@@ -4,6 +4,7 @@ import { onRequestGet as revenue, refreshRevenue } from "../functions/api/revenu
 import { guestbook } from "./guestbook.js";
 import { github } from "./github.js";
 import { syncX } from "./x-sync.js";
+import { chinaRedirect } from "./china-mirror.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,6 +18,10 @@ export default {
       url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
     }
+
+    // Visitors in mainland China go to the faster mirror (off unless CN_MIRROR is set)
+    const toMirror = chinaRedirect(request, env);
+    if (toMirror) return toMirror;
 
     if (pathname === "/api/revenue" || pathname === "/api/revenue/projects") {
       if (request.method !== "GET" && request.method !== "HEAD") {

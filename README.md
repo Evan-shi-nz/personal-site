@@ -313,3 +313,19 @@ Cloudflare 在国内访问不稳定，但目标读者在海外，不影响。
 ## License
 
 Code: MIT. Content (posts, notes, resume, photos): © Evan-shi-nz, all rights reserved.
+
+## 中国访客镜像 cn.evanshi.nz（可选）
+
+中国大陆访问 Cloudflare 较慢。开启后，Cloudflare 按访客的真实 IP 判断国家：中国大陆访客打开网页时，服务器直接 302 跳转到 cn.evanshi.nz（不靠网页里的 JS）。cn.evanshi.nz 指向一台到中国线路好的服务器（例如日本 VPS），由它去 evanshi.nz 取网页再转给访客。搜索引擎、图片/接口请求、香港等地区不跳转。
+
+1. Cloudflare → evanshi.nz → DNS：添加 A 记录，名称 `cn`，IP 填 VPS 的 IP，**代理状态选“仅 DNS”（灰色云朵）**。
+2. 在 VPS 上（Debian/Ubuntu，root）运行：
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Evan-shi-nz/personal-site/main/deploy/cn-mirror/setup.sh -o setup.sh
+   ```
+   ```bash
+   bash setup.sh
+   ```
+   脚本先检查，有问题就停下、不做任何修改；只安装 Caddy，不动已有程序。443 被占用时自动改用 8443 等端口；80 端口需空闲（用来申请免费 HTTPS 证书）。
+3. 脚本最后会打印一个密钥：在 Cloudflare → Worker → Settings → Variables and Secrets 添加 **Secret** `CN_MIRROR_KEY`。有了它，留言板按访客真实 IP 防刷，而不是把所有中国访客当成同一个 IP。
+4. 把 `wrangler.jsonc` 里的 `CN_MIRROR` 设为脚本打印的地址（如 `https://cn.evanshi.nz`），推送后跳转生效。设回 `""` 即关闭。

@@ -1,3 +1,4 @@
+import { clientIp } from "./china-mirror.js";
 // Guestbook API on Cloudflare D1 (binding: DB).
 //   GET  /api/guestbook?page=1   public list, newest first (emails are never returned)
 //   POST /api/guestbook          { name, email, message, website, t }
@@ -35,7 +36,7 @@ export async function guestbook(request, env) {
   if (!env.DB) return json({ error: "The guestbook database is not connected yet." }, 503);
   await ensureSchema(env.DB);
   if (request.method === "GET" || request.method === "HEAD") return list(request, env.DB);
-  if (request.method === "POST") return create(request, env.DB);
+  if (request.method === "POST") return create(request, env.DB, env);
   return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });
 }
 
@@ -53,7 +54,7 @@ async function list(request, db) {
   });
 }
 
-async function create(request, db) {
+async function create(request, db, env) {
   let body;
   try {
     body = await request.json();
@@ -77,7 +78,7 @@ async function create(request, db) {
   if ((message.match(/https?:\/\/|www\./gi) ?? []).length > 2)
     return json({ error: "Please include at most two links." }, 400);
 
-  const visitor = await hash(`${request.headers.get("CF-Connecting-IP") ?? "unknown"}|guestbook`);
+  const visitor = await hash(`${clientIp(request, env)}|guestbook`);
   const now = new Date();
   const [recent, today, dup] = await db.batch([
     db.prepare(`SELECT COUNT(*) AS n FROM guestbook WHERE visitor = ? AND created_at > ?`).bind(visitor, ago(now, 60)),

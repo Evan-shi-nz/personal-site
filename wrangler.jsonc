@@ -33,7 +33,9 @@
   "vars": {
     "X_USERNAME": "EvanShi_nz",
     "GITHUB_REPO": "Evan-shi-nz/personal-site",
-    "GITHUB_BRANCH": "main"
+    "GITHUB_BRANCH": "main",
+    // Mirror for visitors in mainland China, e.g. "https://cn.evanshi.nz". Empty = off. See deploy/cn-mirror.
+    "CN_MIRROR": ""
   },
   // Keep variables and secrets set in the dashboard (PUBLIC_STRIPE_VERIFY_KEY, tokens) across deploys
   "keep_vars": true,
