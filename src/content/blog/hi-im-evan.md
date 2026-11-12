@@ -13,7 +13,6 @@ I've spent more than six years building backend systems, mostly in Java:
 
 - **State Street** (2022–2025): lead developer on an institutional digital-asset trading platform, built as microservices on AWS, in an English-speaking team.
 - **AsiaInfo** (2020–2022): led a billing audit system for a mobile operator with over 10 million subscribers, and made a data service that handles 5 million messages a day 40% faster.
-- **Wonders Information** (2019–2020): built pathology software used by six hospitals and led a small team.
 
 The full version is on my [CV](/cv).
 

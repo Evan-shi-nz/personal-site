@@ -18,7 +18,7 @@
       "url": "https://x.com/EvanShi_nz"
     }
   ],
-  "summary": "Senior software engineer with 6+ years of experience building backend systems for banking, telecom and healthcare, including three years at State Street in an English-speaking team. Since 2025 I have built and run my own AI products. I'm now looking for a full-time software engineering role in New Zealand and will need a work visa.",
+  "summary": "Senior software engineer with 6+ years of experience building backend systems for banking and telecom, including three years at State Street in an English-speaking team. Since 2025 I have built and run my own AI products. I'm now looking for a full-time software engineering role in New Zealand and will need a work visa.",
   "experience": [
     {
       "role": "Founder & Software Engineer",
@@ -48,16 +48,6 @@
       "end": "2022",
       "highlights": [
         "Led a billing audit system for a mobile operator with 10M+ subscribers, and made a 5M-messages-a-day data service 40% faster."
-      ]
-    },
-    {
-      "role": "Java Developer & Team Lead",
-      "company": "Wonders Information",
-      "location": "China",
-      "start": "2019",
-      "end": "2020",
-      "highlights": [
-        "Built pathology software used by six hospitals and led a small team of developers."
       ]
     }
   ],

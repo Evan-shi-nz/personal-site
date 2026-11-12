@@ -88,7 +88,7 @@ const languages = resume.languages.map((l) => `${l.language} (${l.level})`).join
   .block { display: grid; grid-template-columns: 120px 1fr; gap: 4px 20px; padding: 16px 0; border-top: 1px solid var(--line); }
   .block h2 { margin: 2px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .items { display: flex; flex-direction: column; gap: 12px; min-width: 0; margin: 0; }
-  .item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2px 16px; flex-wrap: wrap; }
+  .item-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 16px; }
   .when { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .detail { margin: 2px 0 0; color: var(--muted); }
   :global(.cv .detail a) { color: var(--muted); }
