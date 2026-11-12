@@ -3,7 +3,7 @@
 Evan Shi's personal website: blog, notes synced from X, guestbook, resume, and publicly verifiable revenue.
 
 - **Static site** built with [Astro](https://astro.build), hosted entirely on **Cloudflare**: Workers static assets, a small Worker API, D1 for the guestbook and a Cron Trigger that syncs posts from X. No server of my own.
-- **Revenue from Stripe.** `/revenue` reads each project's Stripe account with a Balance-only key kept on the server, and shows totals only. Projects can link to TrustMRR for third-party verification, or publish their key so anyone can check it with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code.
+- **Revenue from Stripe.** `/products` reads each project's Stripe account with a Balance-only key kept on the server, and shows totals only. Projects can link to TrustMRR for third-party verification, or publish their key so anyone can check it with the open-source [stripe-revenue-verifier](https://github.com/Evan-shi-nz/stripe-revenue-verifier), which uses the exact same calculation code.
 - **Notes from X** get readable URLs made from their words (`/notes/ielts-day-1-writing-task-2`) and link back to the original post.
 - **Editable in the browser** at `/admin` ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)). Every save is a Git commit.
 
@@ -61,7 +61,7 @@ personal-site/
 | `/notes/<由内容生成>` | 单条动态，带 "View on X" 回链 |
 | `/guestbook` | 留言板 |
 | `/cv` | 英文简历（CV，新西兰的叫法），按钮可另存为 PDF；旧地址 `/resume` 自动跳转 |
-| `/revenue` | 收入图表：时间筛选 7D/30D/60D/90D/12M（默认 30 天）、右上角下拉切换全部或单个项目、悬停显示每个项目的明细；选中单个项目时直接显示它的 TrustMRR 链接，选“全部项目”时点开菜单列出每个项目的链接 |
+| `/products` | 独立产品与收入图表：时间筛选 7D/30D/60D/90D/12M（默认 30 天）、右上角下拉切换全部或单个项目、悬停显示每个项目的明细；选中单个项目时直接显示它的 TrustMRR 链接，选“全部项目”时点开菜单列出每个项目的链接 |
 | `/admin` | 写作后台（不会被搜索引擎收录） |
 | `/rss.xml`、`/sitemap-index.xml` | 自动生成 |
 

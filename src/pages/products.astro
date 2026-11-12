@@ -8,11 +8,11 @@ import { RANGES } from "../lib/revenue-client";
 // so adding a project needs no rebuild. Keys never reach the browser.
 const { currency, rates } = site.revenue;
 ---
-<Base title="Revenue" description="Evan Shi's revenue from small online products, read from Stripe and verified on TrustMRR.">
-  <h1>Revenue</h1>
+<Base title="Indie products" description="Small AI products Evan Shi builds and runs on his own, with revenue read from Stripe and verified on TrustMRR.">
+  <h1>Indie products</h1>
   <p class="muted">
-    I run small online products on my own. I don't name them here, but the revenue is real and
-    each project is verified on <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>.
+    I build and run small AI products on my own. I don't name them here, but the revenue below is
+    real and each product is verified on <a href="https://trustmrr.com" {...newTab}>TrustMRR</a>.
   </p>
 
   <section class="rev-card" id="rev" data-currency={currency} data-rates={JSON.stringify(rates)} aria-live="polite">
@@ -22,9 +22,9 @@ const { currency, rates } = site.revenue;
         <div class="small" id="rev-change"></div>
       </div>
       <label class="picker">
-        <span class="visually-hidden">Project</span>
+        <span class="visually-hidden">Product</span>
         <select id="rev-project" disabled>
-          <option value="all">All projects</option>
+          <option value="all">All products</option>
         </select>
       </label>
     </div>
@@ -233,7 +233,7 @@ const { currency, rates } = site.revenue;
 
     // Note under the chart.
     const notes: string[] = [];
-    if (ok.some((p) => !p.complete)) notes.push("Older transactions of some projects are still being added.");
+    if (ok.some((p) => !p.complete)) notes.push("Older transactions of some products are still being added.");
     const skipped = [...new Set(ok.flatMap((p) => p.unconverted))];
     if (skipped.length) notes.push(`Revenue in ${skipped.join(", ")} is not included (no exchange rate set).`);
     const failed = projects.filter((p) => p.error).map((p) => p.label);
@@ -245,7 +245,7 @@ const { currency, rates } = site.revenue;
     const select = $<HTMLSelectElement>("rev-project");
     const ok = projects.filter((p) => !p.error);
     select.innerHTML =
-      `<option value="all">All projects (${ok.length})</option>` +
+      `<option value="all">All products (${ok.length})</option>` +
       ok.map((p) => `<option value="${p.id}">${p.label.replace(/[<&]/g, "")}</option>`).join("");
     select.disabled = ok.length < 2;
     if (ok.length === 1) selected = ok[0].id;
@@ -278,7 +278,7 @@ const { currency, rates } = site.revenue;
       projects = [];
     }
     if (projects.filter((p) => !p.error).length === 0) {
-      $("rev-empty").textContent = projects.length ? "Couldn't load revenue right now." : "Revenue will appear here once projects are connected.";
+      $("rev-empty").textContent = projects.length ? "Couldn't load revenue right now." : "Revenue will appear here once products are connected.";
       return;
     }
     // Biggest project first (by the last 30 days). Projects without a custom name are numbered
@@ -286,7 +286,7 @@ const { currency, rates } = site.revenue;
     const { unit, current } = rangeKeys("30d");
     projects.sort((a, b) => sumKeys(b, unit, current) - sumKeys(a, unit, current));
     projects.forEach((p, i) => {
-      if (/^Project \d+$/i.test(p.label)) p.label = `Project ${i + 1}`;
+      if (/^(Project|Product) \d+$/i.test(p.label)) p.label = `Product ${i + 1}`;
     });
     fillPicker();
     render();
