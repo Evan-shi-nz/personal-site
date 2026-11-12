@@ -16,10 +16,14 @@ const mocks = (ielts.mocks as Mock[]).slice().sort((a, b) => a.date.localeCompar
 const latest = mocks.at(-1);
 // IELTS overall band: average of the four skills, rounded to the nearest half band.
 const overall = (m: Mock) => Math.round(((m.listening + m.reading + m.writing + m.speaking) / 4) * 2) / 2;
-const skills = latest
-  ? ([["Listening", latest.listening], ["Reading", latest.reading], ["Writing", latest.writing], ["Speaking", latest.speaking]] as const)
-  : [];
 const work = site.openToWork;
+const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+// Shown under "Take the IELTS test" in the plan, only for what is filled in src/data/ielts.json
+const ieltsDetails = [
+  ielts.testDate && `Test day ${dayLabel(ielts.testDate)}`,
+  ielts.target && `target ${ielts.target}`,
+  latest && `latest practice ${overall(latest)} (L ${latest.listening} · R ${latest.reading} · W ${latest.writing} · S ${latest.speaking})`,
+].filter(Boolean) as string[];
 const nextStep = journey.findIndex((s) => !s.done);
 const monthLabel = (ym: string) =>
   ym ? new Date(`${ym}-01T00:00:00Z`).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
@@ -42,49 +46,25 @@ const monthLabel = (ym: string) =>
     {site.now.map((item) => <li>{item}</li>)}
   </ul>
 
-  <div class="two">
-    <section class="card" aria-labelledby="ielts-h">
-      <h2 id="ielts-h" class="card-h">IELTS</h2>
-      <p class="small muted">
-        Preparing for {ielts.test}{ielts.target && <> · <span class="nowrap">target <strong>{ielts.target}</strong></span></>}
-      </p>
-      {ielts.testDate ? (
-        <p class="small">Test day: <time datetime={ielts.testDate} id="ielts-date">{ielts.testDate}</time> <span class="muted" id="ielts-countdown"></span></p>
-      ) : (
-        <p class="small muted">Test date not booked yet.</p>
-      )}
-      {latest ? (
-        <>
-          <p class="small muted">Latest practice test · {latest.date} · <span class="nowrap">overall <strong>{overall(latest)}</strong></span></p>
-          <ul class="bands">
-            {skills.map(([name, score]) => (
-              <li>
-                <span>{name}</span>
-                <span class="band-bar"><span style={`width:${(score / 9) * 100}%`}></span></span>
-                <strong>{score}</strong>
-              </li>
-            ))}
-          </ul>
-          {mocks.length > 1 && <p class="small muted">{mocks.length} practice tests so far.</p>}
-        </>
-      ) : (
-        <p class="small muted">No practice test yet. Scores will show up here.</p>
-      )}
-    </section>
-
-    <section class="card" aria-labelledby="journey-h">
-      <h2 id="journey-h" class="card-h">My plan for New Zealand</h2>
-      <ol class="timeline">
-        {journey.map((step, i) => (
-          <li class:list={[{ done: step.done, next: i === nextStep }]}>
-            <span class="dot" aria-hidden="true"></span>
-            <span class="t">{step.title}{i === nextStep && <span class="tag">Next</span>}</span>
-            {step.date && <span class="d muted">{monthLabel(step.date)}</span>}
-          </li>
-        ))}
-      </ol>
-    </section>
-  </div>
+  <section class="card plan" aria-labelledby="journey-h">
+    <h2 id="journey-h" class="card-h">My plan for New Zealand</h2>
+    <ol class="timeline">
+      {journey.map((step, i) => (
+        <li class:list={[{ done: step.done, next: i === nextStep }]}>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="t">
+            {step.title}{i === nextStep && <span class="tag">Next</span>}
+            {"ielts" in step && step.ielts && ieltsDetails.length > 0 && (
+              <span class="sub">
+                {ieltsDetails.map((part, k) => <>{k > 0 && " · "}{part}{k === 0 && ielts.testDate && <span id="ielts-countdown" data-date={ielts.testDate}></span>}</>)}
+              </span>
+            )}
+          </span>
+          {step.date && <span class="d muted">{monthLabel(step.date)}</span>}
+        </li>
+      ))}
+    </ol>
+  </section>
 
   <h2>Blog</h2>
   <PostList posts={posts} />
@@ -129,7 +109,7 @@ const monthLabel = (ym: string) =>
 
 <style>
   /* Profile on the left (sticky while scrolling), content on the right; stacked on smaller screens */
-  .home { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 56px; align-items: start; }
+  .home { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 64px; align-items: start; }
   .profile { position: sticky; top: 28px; display: flex; flex-direction: column; gap: 10px; }
   .profile .avatar { width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
   .profile h1 { margin: 8px 0 0; font-size: 1.8rem; }
@@ -158,14 +138,9 @@ const monthLabel = (ym: string) =>
   :global(.rev-bars rect) { fill: var(--fg); }
   :global(.rev-bars rect.zero) { fill: var(--line); }
 
-  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 40px; align-items: start; }
-  .two > .card { min-width: 0; }
-  .bands { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-  .bands li { display: grid; grid-template-columns: 76px 1fr 28px; align-items: center; gap: 8px; }
-  .bands strong { text-align: right; font-variant-numeric: tabular-nums; }
-  .band-bar { height: 6px; background: var(--soft); border-radius: 99px; overflow: hidden; }
-  .band-bar span { display: block; height: 100%; background: var(--fg); border-radius: 99px; }
 
+  .plan { margin-top: 40px; }
+  .timeline .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
   .timeline { list-style: none; padding: 0; margin: 8px 0 0; font-size: 14.5px; }
   .timeline li { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 0 0 12px 22px; }
   .timeline li:last-child { padding-bottom: 0; }
@@ -216,13 +191,11 @@ const monthLabel = (ym: string) =>
     } catch {}
   })();
 
-  // ---- IELTS countdown ----
-  const dateEl = document.getElementById("ielts-date");
-  if (dateEl) {
-    const d = new Date(dateEl.getAttribute("datetime") + "T00:00:00");
-    dateEl.textContent = d.toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" });
-    const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
-    document.getElementById("ielts-countdown")!.textContent = days > 0 ? `· in ${days} day${days > 1 ? "s" : ""}` : days === 0 ? "· today" : "· done";
+  // ---- IELTS countdown (in the plan, when a test day is set) ----
+  const countdown = document.getElementById("ielts-countdown");
+  if (countdown?.dataset.date) {
+    const days = Math.ceil((new Date(countdown.dataset.date + "T00:00:00").getTime() - Date.now()) / 86400000);
+    if (days >= 0) countdown.textContent = days > 0 ? ` · in ${days} day${days > 1 ? "s" : ""}` : " · today";
   }
 
   // ---- GitHub contribution calendar (only when the section is on the page) ----

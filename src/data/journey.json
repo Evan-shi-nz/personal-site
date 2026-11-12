@@ -17,7 +17,8 @@
   {
     "date": "",
     "title": "Take the IELTS test",
-    "done": false
+    "done": false,
+    "ielts": true
   },
   {
     "date": "",

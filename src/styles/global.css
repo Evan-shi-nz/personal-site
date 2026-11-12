@@ -39,7 +39,7 @@ body {
   margin: 0 auto;
   padding: 32px max(20px, env(safe-area-inset-right)) 64px max(20px, env(safe-area-inset-left));
 }
-.container.wide { max-width: 1040px; }
+.container.wide { max-width: 1160px; }
 a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { text-decoration-thickness: 2px; }
 a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
