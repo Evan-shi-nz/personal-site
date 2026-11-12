@@ -6,6 +6,10 @@
   "phone": "",
   "links": [
     {
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/"
+    },
+    {
       "label": "GitHub",
       "url": "https://github.com/Evan-shi-nz"
     },
@@ -101,7 +105,7 @@
   "achievements": [
     "Huawei Certified ICT Professional (HCIP)",
     "Lanqiao Cup programming contest, second prize",
-    "Open-source project with 800+ GitHub stars"
+    "[Open-source project](https://github.com/gzldc/12306) with 800+ GitHub stars"
   ],
   "languages": [
     {

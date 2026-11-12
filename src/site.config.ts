@@ -18,7 +18,8 @@ export const site = {
   links: {
     // Set any of these to "" to hide it
     x: "https://x.com/EvanShi_nz",
-    linkedin: "",
+    // Temporary: LinkedIn home page until the profile exists, then use https://www.linkedin.com/in/<name>
+    linkedin: "https://www.linkedin.com/",
     github: "https://github.com/Evan-shi-nz",
     email: "nz.evanshi@gmail.com",
     // WhatsApp contact link from the app's QR code; the QR image is public/images/whatsapp-qr.png.
@@ -55,7 +56,10 @@ export const site = {
   // position in STRIPE_REVENUE_KEYS ("1" = first line). Leave "" to show nothing.
   // Describe what it does and what you built, without naming it, e.g.
   // "AI speech-to-text tool for creators. I built the transcription pipeline, payments and hosting."
-  productNotes: { "1": "", "2": "" } as Record<string, string>,
+  productNotes: {
+    "1": "Audio and video transcription tool, launched in 2026. I built the speech-to-text pipeline, the web app and billing.",
+    "2": "AI image editing tool for creators and small businesses, paid with credit packs and subscriptions. I built and run all of it on my own: AI pipeline, web app, payments and hosting.",
+  } as Record<string, string>,
   // Items per page
   pageSize: { blog: 10, notes: 20 },
 };

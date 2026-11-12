@@ -28,7 +28,7 @@ const nav = [
   ["/guestbook", "Guestbook"],
 ];
 
-const sameAs = [site.links.x, site.links.linkedin, site.links.github].filter(Boolean);
+const sameAs = [site.links.x, /\/in\//.test(site.links.linkedin) ? site.links.linkedin : "", site.links.github].filter(Boolean);
 const jsonLd =
   type === "article"
     ? {

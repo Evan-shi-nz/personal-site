@@ -13,7 +13,7 @@ const icons = {
 const handle = (url: string) => url.replace(/\/+$/, "").split("/").pop();
 const items = [
   x && { key: "x", label: "X", detail: `@${handle(x)}`, href: x },
-  linkedin && { key: "linkedin", label: "LinkedIn", detail: handle(linkedin), href: linkedin },
+  linkedin && { key: "linkedin", label: "LinkedIn", detail: /\/in\//.test(linkedin) ? handle(linkedin) : "", href: linkedin },
   github && { key: "github", label: "GitHub", detail: `@${handle(github)}`, href: github },
 ].filter(Boolean) as { key: keyof typeof icons; label: string; detail: string; href: string }[];
 const svg = (key: keyof typeof icons) => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[key]}</svg>`;
