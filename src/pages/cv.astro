@@ -69,10 +69,12 @@ const languages = resume.languages.map((l) => `${l.language} (${l.level})`).join
       </section>
     )}
 
-    <section class="block">
-      <h2>Languages</h2>
-      <div class="items"><p class="detail">{languages}</p></div>
-    </section>
+    {languages && (
+      <section class="block">
+        <h2>Languages</h2>
+        <div class="items"><p class="detail">{languages}</p></div>
+      </section>
+    )}
   </article>
 </Base>
 

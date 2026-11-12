@@ -18,7 +18,7 @@
       "url": "https://x.com/EvanShi_nz"
     }
   ],
-  "summary": "Senior software engineer with 6+ years of experience building backend systems for banking and telecom, including 3+ years at State Street. Since 2025 I have built and run my own AI products. I'm now looking for a full-time software engineering role in New Zealand.",
+  "summary": "Senior software engineer with 6+ years of experience building backend systems for banking and telecom, including 3+ years at State Street. Since 2025 I have been building my own indie AI products. I'm now looking for a full-time software engineering role in New Zealand.",
   "experience": [
     {
       "role": "Founder & Software Engineer",
@@ -97,14 +97,5 @@
     "Lanqiao Cup programming contest, second prize",
     "[Open-source project](https://github.com/gzldc/12306) with 800+ GitHub stars"
   ],
-  "languages": [
-    {
-      "language": "Mandarin",
-      "level": "native"
-    },
-    {
-      "language": "English",
-      "level": "professional working proficiency"
-    }
-  ]
+  "languages": []
 }
