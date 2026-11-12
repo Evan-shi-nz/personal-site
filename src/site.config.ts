@@ -36,7 +36,7 @@ export const site = {
   // One quiet line under the contacts on the home page. Set enabled: false to hide.
   openToWork: {
     enabled: true,
-    text: "Hiring in New Zealand, or know a team that is? A referral or an intro would mean a lot.",
+    text: "Looking for a full-time developer role in New Zealand. Referrals are very welcome, and I'd be truly grateful for one. Always happy to chat.",
   },
   // Shown on the home page; keep it short and current
   now: [
