@@ -6,7 +6,6 @@ import NoteCard from "../components/NoteCard.astro";
 import { site } from "../site.config";
 import { getPosts, getNotes } from "../lib/content";
 import ielts from "../data/ielts.json";
-import journey from "../data/journey.json";
 
 const posts = (await getPosts()).slice(0, 5);
 const notes = site.notesEnabled ? (await getNotes()).slice(0, 3) : [];
@@ -18,15 +17,12 @@ const latest = mocks.at(-1);
 const overall = (m: Mock) => Math.round(((m.listening + m.reading + m.writing + m.speaking) / 4) * 2) / 2;
 const work = site.openToWork;
 const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-// Shown under "Take the IELTS test" in the plan, only for what is filled in src/data/ielts.json
+// Shown under the IELTS line in "Now", only for what is filled in src/data/ielts.json
 const ieltsDetails = [
   ielts.testDate && `Test day ${dayLabel(ielts.testDate)}`,
   ielts.target && `target ${ielts.target}`,
   latest && `latest practice ${overall(latest)} (L ${latest.listening} · R ${latest.reading} · W ${latest.writing} · S ${latest.speaking})`,
 ].filter(Boolean) as string[];
-const nextStep = journey.findIndex((s) => !s.done);
-const monthLabel = (ym: string) =>
-  ym ? new Date(`${ym}-01T00:00:00Z`).toLocaleDateString("en-NZ", { month: "short", year: "numeric", timeZone: "UTC" }) : "";
 ---
 <Base wide>
 <div class="home">
@@ -43,28 +39,17 @@ const monthLabel = (ym: string) =>
 
   <h2>Now</h2>
   <ul>
-    {site.now.map((item) => <li>{item}</li>)}
-  </ul>
-
-  <section class="card plan" aria-labelledby="journey-h">
-    <h2 id="journey-h" class="card-h">My plan for New Zealand</h2>
-    <ol class="timeline">
-      {journey.map((step, i) => (
-        <li class:list={[{ done: step.done, next: i === nextStep }]}>
-          <span class="dot" aria-hidden="true"></span>
-          <span class="t">
-            {step.title}{i === nextStep && <span class="tag">Next</span>}
-            {"ielts" in step && step.ielts && ieltsDetails.length > 0 && (
-              <span class="sub">
-                {ieltsDetails.map((part, k) => <>{k > 0 && " · "}{part}{k === 0 && ielts.testDate && <span id="ielts-countdown" data-date={ielts.testDate}></span>}</>)}
-              </span>
-            )}
+    {site.now.map((item) => (
+      <li>
+        {item}
+        {/IELTS/.test(item) && ieltsDetails.length > 0 && (
+          <span class="sub">
+            {ieltsDetails.map((part, k) => <>{k > 0 && " · "}{part}{k === 0 && ielts.testDate && <span id="ielts-countdown" data-date={ielts.testDate}></span>}</>)}
           </span>
-          {step.date && <span class="d muted">{monthLabel(step.date)}</span>}
-        </li>
-      ))}
-    </ol>
-  </section>
+        )}
+      </li>
+    ))}
+  </ul>
 
   <h2>Blog</h2>
   <PostList posts={posts} />
@@ -139,20 +124,7 @@ const monthLabel = (ym: string) =>
   :global(.rev-bars rect.zero) { fill: var(--line); }
 
 
-  .plan { margin-top: 40px; }
-  .timeline .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
-  .timeline { list-style: none; padding: 0; margin: 8px 0 0; font-size: 14.5px; }
-  .timeline li { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 0 0 12px 22px; }
-  .timeline li:last-child { padding-bottom: 0; }
-  .timeline li::before { content: ""; position: absolute; left: 5px; top: 14px; bottom: -2px; width: 2px; background: var(--line); }
-  .timeline li:last-child::before { display: none; }
-  .timeline .dot { position: absolute; left: 0; top: 5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
-  .timeline li.done .dot { background: var(--good); border-color: var(--good); }
-  .timeline li.next .dot { border-color: var(--fg); }
-  .timeline li:not(.done) .t { color: var(--muted); }
-  .timeline li.next .t { color: var(--fg); font-weight: 600; }
-  .timeline .d { font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .tag { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--fg); color: var(--bg); vertical-align: 1px; }
+  .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
 
   .gh-card { padding-bottom: 10px; }
   .gh-grid-wrap { overflow-x: auto; }
@@ -191,7 +163,7 @@ const monthLabel = (ym: string) =>
     } catch {}
   })();
 
-  // ---- IELTS countdown (in the plan, when a test day is set) ----
+  // ---- IELTS countdown (in "Now", when a test day is set) ----
   const countdown = document.getElementById("ielts-countdown");
   if (countdown?.dataset.date) {
     const days = Math.ceil((new Date(countdown.dataset.date + "T00:00:00").getTime() - Date.now()) / 86400000);

@@ -76,7 +76,6 @@ personal-site/
 | `src/site.config.ts` | `url`（你的域名）、`name`、`tagline`、`links.x`、`links.linkedin`、`now` |
 | `src/data/resume.json` | 整份简历（CV） |
 | `src/data/ielts.json` | 雅思：目标分数、考试日期、每次模考的四项成绩（首页自动算总分和倒计时） |
-| `src/data/journey.json` | 新西兰之路时间线：每一步的标题、完成日期（`YYYY-MM`）、是否完成 |
 | `public/robots.txt` | 最后一行的域名 |
 | `src/content/blog/why-i-am-moving-to-new-zealand.md` | 示例文章，用自己的话重写或删除 |
 
@@ -165,7 +164,7 @@ Token 只保存在你自己的浏览器里，不会经过任何服务器。
 
 ## 首页上的雅思进度和时间线
 
-在 `/admin` → **CV, IELTS and journey** 里修改，或者直接改 JSON 文件：
+在 `/admin` → **CV and IELTS** 里修改，或者直接改 JSON 文件：
 
 ```json
 {

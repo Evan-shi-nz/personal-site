@@ -1,14 +1,20 @@
 {
   "name": "Evan Shi",
   "headline": "Senior Software Engineer",
-  "location": "China · moving to New Zealand",
+  "location": "China · relocating to New Zealand",
   "email": "nz.evanshi@gmail.com",
   "phone": "",
   "links": [
-    { "label": "GitHub", "url": "https://github.com/Evan-shi-nz" },
-    { "label": "X", "url": "https://x.com/EvanShi_nz" }
+    {
+      "label": "GitHub",
+      "url": "https://github.com/Evan-shi-nz"
+    },
+    {
+      "label": "X",
+      "url": "https://x.com/EvanShi_nz"
+    }
   ],
-  "summary": "Software engineer with 6+ years of experience building backend systems for banking, telecom and healthcare, including three years at State Street in an English-speaking team. I now build and run my own AI products, and I'm preparing to study for a master's degree and work as a software engineer in New Zealand.",
+  "summary": "Senior software engineer with 6+ years of experience building backend systems for banking, telecom and healthcare, including three years at State Street in an English-speaking team. Since 2025 I have built and run my own AI products. I'm now looking for a full-time software engineering role in New Zealand and will need a work visa.",
   "experience": [
     {
       "role": "Founder & Software Engineer",
@@ -52,12 +58,45 @@
     }
   ],
   "skills": [
-    { "group": "Backend", "items": ["Java", "Spring Boot", "Spring Cloud", "Python", "SQL", "Microservices"] },
-    { "group": "Data & cloud", "items": ["MySQL", "Redis", "Kafka", "AWS", "Docker", "Linux"] },
-    { "group": "AI", "items": ["LLM APIs", "RAG", "Agents", "Speech and OCR pipelines"] }
+    {
+      "group": "Backend",
+      "items": [
+        "Java",
+        "Spring Boot",
+        "Spring Cloud",
+        "Python",
+        "SQL",
+        "Microservices"
+      ]
+    },
+    {
+      "group": "Data & cloud",
+      "items": [
+        "MySQL",
+        "Redis",
+        "Kafka",
+        "AWS",
+        "Docker",
+        "Linux"
+      ]
+    },
+    {
+      "group": "AI",
+      "items": [
+        "LLM APIs",
+        "RAG",
+        "Agents",
+        "Speech and OCR pipelines"
+      ]
+    }
   ],
   "education": [
-    { "degree": "B.Eng. Communication Engineering", "school": "Jiangxi University of Technology", "start": "2015", "end": "2019" }
+    {
+      "degree": "B.Eng. Communication Engineering",
+      "school": "Jiangxi University of Technology",
+      "start": "2015",
+      "end": "2019"
+    }
   ],
   "achievements": [
     "Huawei Certified ICT Professional (HCIP)",
@@ -65,7 +104,13 @@
     "Open-source project with 800+ GitHub stars"
   ],
   "languages": [
-    { "language": "Mandarin", "level": "native" },
-    { "language": "English", "level": "professional working proficiency" }
+    {
+      "language": "Mandarin",
+      "level": "native"
+    },
+    {
+      "language": "English",
+      "level": "professional working proficiency"
+    }
   ]
 }

@@ -41,7 +41,7 @@ collections:
       - { name: body, label: Text, widget: markdown }
 
   - name: data
-    label: CV, IELTS and journey
+    label: CV and IELTS
     files:
       - name: ielts
         label: IELTS progress
@@ -61,20 +61,6 @@ collections:
               - { name: reading, label: Reading, widget: number, value_type: float, min: 0, max: 9, step: 0.5 }
               - { name: writing, label: Writing, widget: number, value_type: float, min: 0, max: 9, step: 0.5 }
               - { name: speaking, label: Speaking, widget: number, value_type: float, min: 0, max: 9, step: 0.5 }
-      - name: journey
-        label: Journey to New Zealand
-        file: src/data/journey.json
-        format: json
-        root: true
-        fields:
-          - name: items
-            label: Steps (in order)
-            widget: list
-            root: true
-            fields:
-              - { name: date, label: "Date (YYYY-MM, empty if not done yet)", widget: string, required: false }
-              - { name: title, label: Step, widget: string }
-              - { name: done, label: Done, widget: boolean, default: false }
       - name: resume
         label: CV
         file: src/data/resume.json

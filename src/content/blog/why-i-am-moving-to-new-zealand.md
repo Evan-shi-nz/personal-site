@@ -3,6 +3,8 @@ title: Why I'm moving to New Zealand
 description: The plan, the first step (IELTS), and why I'm writing it all down in public.
 date: 2026-11-09
 tags: [new-zealand, ielts]
+# Hidden until it is rewritten in my own words
+draft: true
 ---
 
 TODO: This is a starter post. Rewrite it in your own words before publishing.
