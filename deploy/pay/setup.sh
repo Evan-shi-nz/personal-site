@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sets up a self-hosted crypto payment gateway (BEpusdt, https://github.com/v03413/BEpusdt)
-# on its own server, reachable over HTTPS at pay.evanshi.nz (or another domain).
+# on its own server, reachable over HTTPS at the domain given on the command line.
 # All websites share this one gateway: each creates orders through its API and gets a callback
 # when the order is paid.
 #
@@ -13,11 +13,13 @@
 # Needs: Debian or Ubuntu, root, ports 80 and 443 free and open in the provider's firewall,
 # and a DNS record for the domain pointing at this server with Cloudflare's proxy OFF (grey cloud).
 #
-# Usage:  sudo bash setup.sh                 (domain defaults to pay.evanshi.nz)
-#         sudo bash setup.sh pay.example.com
+# Usage:  sudo bash setup.sh pay.example.com
+# The domain is not written anywhere in this repository on purpose: this repository is public,
+# and the payment domain should not be linked to this website.
 set -euo pipefail
 
-PAY_HOST="${1:-pay.evanshi.nz}"
+PAY_HOST="${1:-}"
+[ -n "$PAY_HOST" ] || { echo "Usage: sudo bash setup.sh pay.example.com"; exit 1; }
 IMAGE="v03413/bepusdt:latest"
 DATA_DIR="/opt/bepusdt"
 NAME="bepusdt"
